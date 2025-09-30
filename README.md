@@ -1,6 +1,6 @@
 # Chainy – AWS/Terraform URL Shortener Scaffold
 
-Chainy is a learning scaffold for building a serverless short URL platform on AWS with Terraform. It wires together an HTTP API, Lambda functions, DynamoDB storage, and an asynchronous click-event pipeline (EventBridge → Kinesis Firehose → S3) so you can focus on iterating and deepening your AWS + Terraform skills.
+Chainy is a learning scaffold for building a serverless short URL platform on AWS with Terraform. It wires together an HTTP API, Lambda functions, DynamoDB storage, and a lightweight event pipeline where Lambda writes JSONL records straight to S3 so you can focus on iterating and deepening your AWS + Terraform skills.
 
 > 🇹🇼 Looking for the Traditional Chinese guide? See [README_ZH.md](README_ZH.md).
 
@@ -13,7 +13,7 @@ tfvars/                 # (optional) directory for environment-specific tfvars f
 modules/
   api/                  # API Gateway HTTP API + routes + Lambda permissions
   db/                   # DynamoDB table definition for short links
-  events/               # EventBridge bus, Firehose stream, and S3 analytics bucket
+  events/               # S3 bucket (with lifecycle policies) for domain events
   lambda/               # Redirect + CRUD Lambdas and IAM roles
 handlers/               # TypeScript Lambda sources
 lib/                    # Shared TypeScript utilities (DynamoDB client)
@@ -97,7 +97,7 @@ Re-run `npm run package` whenever you change the TypeScript source before deploy
    terraform apply -var="environment=dev"
    ```
 
-Terraform outputs include the API endpoint, DynamoDB table name, EventBridge bus, and click-event bucket.
+Terraform outputs include the API endpoint, DynamoDB table name, and the events S3 bucket.
 
 ## Testing the API
 
@@ -133,11 +133,19 @@ After `terraform apply`, note the `api_endpoint` output (e.g. `https://abc123.ex
 
 ## Data flow overview
 
-1. **Link creation**: `POST /links` triggers the create Lambda, which writes metadata to DynamoDB and emits a `link_create` event to EventBridge.
-2. **Redirect**: `GET /{code}` invokes the redirect Lambda. It looks up the target in DynamoDB, increments click counters, sends a non-blocking `link_click` event, and returns a `301` response.
-3. **Event pipeline**: EventBridge routes `link_click` (and other lifecycle events) to a Kinesis Firehose delivery stream.
-4. **Analytics storage**: Firehose batches events into the S3 analytics bucket, partitioned by date.
-5. **Insights**: Query the S3 data with Athena or visualize with QuickSight. The Firehose log group helps troubleshoot failures.
+1. **Link creation**: `POST /links` triggers the create Lambda, which writes metadata to DynamoDB and immediately appends a `link_create` JSONL object to the events S3 bucket.
+2. **Redirect**: `GET /{code}` invokes the redirect Lambda. It looks up the target in DynamoDB, increments click counters, and asynchronously logs a `link_click` event to S3 while returning a `301` response.
+3. **Lifecycle events**: Update/delete endpoints also append JSONL records so downstream analytics stay in sync.
+4. **Analytics storage**: S3 objects are partitioned by event type and date/hour (e.g. `link_click/dt=2024-09-30/hour=13/...`).
+5. **Insights**: Use Athena (via an external table over the JSONL keys) or import into QuickSight/ETL jobs for dashboards.
+
+### Cost snapshot
+
+With fewer than 10k events per month, the direct-to-S3 approach keeps costs to pennies:
+
+- **S3 PUT**: $0.005 per 1,000 requests → ≈ $0.05 for 10k events.
+- **S3 storage**: JSONL events (a few KB each) stay under a few cents per month; lifecycle expires or transitions them after `click_events_retention_days` (default 30 days).
+- **Lambda**: Millisecond execution time leads to <$0.01/month at the stated volume.
 
 ## Cleaning up
 

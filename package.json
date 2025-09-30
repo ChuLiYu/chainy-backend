@@ -5,16 +5,18 @@
   "type": "module",
   "scripts": {
     "package": "node ./scripts/build-lambdas.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --import ./scripts/register-loader.mjs --test tests/**/*.test.ts"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.590.0",
-    "@aws-sdk/client-eventbridge": "^3.590.0",
+    "@aws-sdk/client-s3": "^3.899.0",
     "@aws-sdk/lib-dynamodb": "^3.590.0"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.130",
     "esbuild": "^0.21.5",
+    "ts-node": "^10.9.2",
     "typescript": "^5.4.5"
   }
 }

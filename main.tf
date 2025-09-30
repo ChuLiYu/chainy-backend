@@ -17,12 +17,12 @@ module "db" {
   tags        = local.tags
 }
 
-# EventBridge bus, Firehose, and S3 bucket for asynchronous analytics.
+# S3 bucket storing raw Chainy domain events for analytics.
 module "events" {
-  source      = "./modules/events"
-  project     = var.project
-  environment = var.environment
-  tags        = local.tags
+  source         = "./modules/events"
+  project        = var.project
+  environment    = var.environment
+  tags           = local.tags
   retention_days = var.click_events_retention_days
 }
 
@@ -36,7 +36,7 @@ module "lambda" {
   table_name = module.db.table_name
   table_arn  = module.db.table_arn
 
-  event_bus_name = module.events.event_bus_name
+  events_bucket_name = module.events.bucket_name
 
   redirect_source_dir = local.redirect_source_dir
   create_source_dir   = local.create_source_dir

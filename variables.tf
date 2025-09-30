@@ -38,7 +38,7 @@ variable "log_retention_in_days" {
 }
 
 variable "click_events_retention_days" {
-  description = "Number of days to retain click-event objects in S3 before transitioning to Glacier."
+  description = "Number of days to retain raw event objects in S3 before lifecycle expiration."
   type        = number
   default     = 30
 }

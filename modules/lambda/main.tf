@@ -31,9 +31,9 @@ locals {
   }
 
   base_environment = merge({
-    CHAINY_ENVIRONMENT    = var.environment,
-    CHAINY_TABLE_NAME     = var.table_name,
-    CHAINY_EVENT_BUS_NAME = var.event_bus_name
+    CHAINY_ENVIRONMENT        = var.environment,
+    CHAINY_TABLE_NAME         = var.table_name,
+    CHAINY_EVENTS_BUCKET_NAME = var.events_bucket_name
   }, var.additional_environment)
 
   source_dirs = {
@@ -41,11 +41,6 @@ locals {
     create   = var.create_source_dir
   }
 }
-
-# Discover account/region for IAM policy wiring.
-data "aws_region" "current" {}
-
-data "aws_caller_identity" "current" {}
 
 # Zip the pre-built handler directories for upload.
 data "archive_file" "lambda" {
@@ -95,8 +90,8 @@ resource "aws_iam_role_policy" "lambda" {
       },
       {
         Effect = "Allow"
-        Action = ["events:PutEvents"]
-        Resource = "arn:aws:events:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:event-bus/${var.event_bus_name}"
+        Action = ["s3:PutObject"]
+        Resource = "arn:aws:s3:::${var.events_bucket_name}/*"
       },
       {
         Effect = "Allow"

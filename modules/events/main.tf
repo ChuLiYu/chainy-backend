@@ -1,33 +1,23 @@
-# Consistent names for the event pipeline components.
+# Derive consistent naming for the event storage bucket.
 locals {
-  bus_name     = "${var.project}-${var.environment}-chainy-bus"
-  bucket_name  = "${var.project}-${var.environment}-chainy-click-events"
-  firehose_name = "${var.project}-${var.environment}-chainy-firehose"
-  log_group_name = "/aws/kinesisfirehose/${var.project}-${var.environment}-chainy"
+  bucket_name = "${var.project}-${var.environment}-chainy-events"
 }
 
-# Dedicated event bus for Chainy domain events.
-resource "aws_cloudwatch_event_bus" "chainy" {
-  name = local.bus_name
-
-  tags = merge(var.tags, {
-    "Name" = local.bus_name
-  })
-}
-
-# S3 bucket stores the batched click analytics.
-resource "aws_s3_bucket" "click_events" {
+# S3 bucket storing raw Chainy domain events written by Lambda functions.
+resource "aws_s3_bucket" "events" {
   bucket        = local.bucket_name
   force_destroy = false
 
   tags = merge(var.tags, {
-    "Name" = local.bucket_name
+    Name        = local.bucket_name
+    Environment = var.environment
+    Purpose     = "chainy-events"
   })
 }
 
-# Block all public access to the analytics bucket.
-resource "aws_s3_bucket_public_access_block" "click_events" {
-  bucket = aws_s3_bucket.click_events.id
+# Block all forms of public access to the events bucket.
+resource "aws_s3_bucket_public_access_block" "events" {
+  bucket = aws_s3_bucket.events.id
 
   block_public_acls       = true
   block_public_policy     = true
@@ -35,9 +25,18 @@ resource "aws_s3_bucket_public_access_block" "click_events" {
   restrict_public_buckets = true
 }
 
-# Default server-side encryption for the analytics bucket.
-resource "aws_s3_bucket_server_side_encryption_configuration" "click_events" {
-  bucket = aws_s3_bucket.click_events.bucket
+# Enable versioning in case events need to be restored.
+resource "aws_s3_bucket_versioning" "events" {
+  bucket = aws_s3_bucket.events.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+# Default server-side encryption for events stored at rest.
+resource "aws_s3_bucket_server_side_encryption_configuration" "events" {
+  bucket = aws_s3_bucket.events.id
 
   rule {
     apply_server_side_encryption_by_default {
@@ -46,166 +45,20 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "click_events" {
   }
 }
 
-# Lifecycle policy keeps storage costs predictable.
-resource "aws_s3_bucket_lifecycle_configuration" "click_events" {
-  bucket = aws_s3_bucket.click_events.id
+# Lifecycle management keeps storage costs predictable.
+resource "aws_s3_bucket_lifecycle_configuration" "events" {
+  bucket = aws_s3_bucket.events.id
 
   rule {
-    id     = "expire-click-events"
+    id     = "expire-events"
     status = "Enabled"
+
+    filter {
+      prefix = ""
+    }
 
     expiration {
       days = var.retention_days
     }
   }
-}
-
-# Capture Firehose delivery diagnostics.
-resource "aws_cloudwatch_log_group" "firehose" {
-  name              = local.log_group_name
-  retention_in_days = 14
-
-  tags = var.tags
-}
-
-# Firehose buffers events from EventBridge into S3 partitions.
-resource "aws_kinesis_firehose_delivery_stream" "click_events" {
-  name        = local.firehose_name
-  destination = "extended_s3"
-
-  extended_s3_configuration {
-    role_arn           = aws_iam_role.firehose.arn
-    bucket_arn         = aws_s3_bucket.click_events.arn
-    buffering_interval = 60
-    buffering_size     = 1
-    compression_format = "GZIP"
-    prefix             = "year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/"
-    error_output_prefix = "failed/!{firehose:error-output-type}/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/"
-
-    cloudwatch_logging_options {
-      enabled         = true
-      log_group_name  = aws_cloudwatch_log_group.firehose.name
-      log_stream_name = "delivery"
-    }
-  }
-
-  tags = merge(var.tags, {
-    "Name" = local.firehose_name
-  })
-}
-
-# IAM role assumed by Firehose when writing to S3 and CloudWatch Logs.
-resource "aws_iam_role" "firehose" {
-  name = "${var.project}-${var.environment}-firehose-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Service = "firehose.amazonaws.com"
-        }
-        Action = "sts:AssumeRole"
-      }
-    ]
-  })
-
-  tags = var.tags
-}
-
-# Principle of least privilege for Firehose access.
-resource "aws_iam_role_policy" "firehose" {
-  name = "${var.project}-${var.environment}-firehose-policy"
-  role = aws_iam_role.firehose.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:AbortMultipartUpload",
-          "s3:GetBucketLocation",
-          "s3:GetObject",
-          "s3:ListBucket",
-          "s3:ListBucketMultipartUploads",
-          "s3:PutObject"
-        ]
-        Resource = [
-          aws_s3_bucket.click_events.arn,
-          "${aws_s3_bucket.click_events.arn}/*"
-        ]
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "logs:PutLogEvents",
-          "logs:CreateLogStream"
-        ]
-        Resource = "${aws_cloudwatch_log_group.firehose.arn}:*"
-      }
-    ]
-  })
-}
-
-# Role EventBridge uses to invoke the Firehose delivery stream.
-resource "aws_iam_role" "eventbridge_target" {
-  name = "${var.project}-${var.environment}-eventbridge-firehose-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Service = "events.amazonaws.com"
-        }
-        Action = "sts:AssumeRole"
-      }
-    ]
-  })
-
-  tags = var.tags
-}
-
-# Allow EventBridge to push individual or batched records.
-resource "aws_iam_role_policy" "eventbridge_target" {
-  name = "${var.project}-${var.environment}-eventbridge-firehose-policy"
-  role = aws_iam_role.eventbridge_target.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "firehose:PutRecord",
-          "firehose:PutRecordBatch"
-        ]
-        Resource = aws_kinesis_firehose_delivery_stream.click_events.arn
-      }
-    ]
-  })
-}
-
-# Match Chainy domain events that should flow into analytics.
-resource "aws_cloudwatch_event_rule" "link_events" {
-  name          = "${var.project}-${var.environment}-link-events"
-  event_bus_name = aws_cloudwatch_event_bus.chainy.name
-
-  event_pattern = jsonencode({
-    source = ["chainy.links"],
-    "detail-type" = ["link_click", "link_create"]
-  })
-
-  tags = var.tags
-}
-
-# Wire the rule to Firehose using the permissions role above.
-resource "aws_cloudwatch_event_target" "firehose" {
-  rule          = aws_cloudwatch_event_rule.link_events.name
-  event_bus_name = aws_cloudwatch_event_rule.link_events.event_bus_name
-  arn           = aws_kinesis_firehose_delivery_stream.click_events.arn
-  role_arn      = aws_iam_role.eventbridge_target.arn
 }

@@ -1,6 +1,6 @@
 # Chainy – AWS/Terraform 短網址腳手架
 
-Chainy 是一個協助你同時練習 AWS 與 Terraform 的伺服器無後端短網址服務腳手架。它整合 HTTP API、Lambda、DynamoDB 以及非同步點擊事件管線（EventBridge → Kinesis Firehose → S3），讓你能專注在功能迭代與雲端實戰。
+Chainy 是一個協助你同時練習 AWS 與 Terraform 的伺服器無後端短網址服務腳手架。它整合 HTTP API、Lambda、DynamoDB，並採用 Lambda 直接寫入 S3 的輕量事件管線，讓你能專注在功能迭代與雲端實戰。
 
 > Looking for the English version? 請查看 [README.md](README.md)。
 
@@ -13,7 +13,7 @@ tfvars/                 # 建議放環境專屬的變數檔（可自行建立）
 modules/
   api/                  # API Gateway HTTP API、路由與 Lambda 權限
   db/                   # DynamoDB 短網址資料表
-  events/               # EventBridge + Firehose + S3 點擊事件管線
+  events/               # 僅含 S3 事件儲存 bucket（含版本化與生命周期）
   lambda/               # Redirect 與 CRUD Lambda 及其 IAM 設定
 handlers/               # Lambda TypeScript 原始碼
 lib/                    # 共享的 DynamoDB 工具
@@ -97,7 +97,7 @@ npm run package        # 將 handlers 打包輸出到 dist/redirect 與 dist/cre
    terraform apply -var="environment=dev"
    ```
 
-完成後會輸出 API endpoint、DynamoDB 資料表、EventBridge Bus、S3 Bucket 等資訊。
+完成後會輸出 API endpoint、DynamoDB 資料表與事件 S3 Bucket 等資訊。
 
 ## 測試 API
 
@@ -133,11 +133,17 @@ npm run package        # 將 handlers 打包輸出到 dist/redirect 與 dist/cre
 
 ## 資料流程說明
 
-1. **建立短碼**：`POST /links` 觸發 create Lambda，寫入 DynamoDB 並送出 `link_create` 事件到 EventBridge。
-2. **短網址轉址**：`GET /{code}` 觸發 redirect Lambda，查詢 DynamoDB、更新點擊計數、非阻塞地送出 `link_click` 事件，並回傳 `301`。
-3. **事件管線**：EventBridge 依規則將事件轉送至 Kinesis Firehose。
-4. **資料落地**：Firehose 批次寫入 S3，並以日期分區。
-5. **分析洞察**：可使用 Athena 查詢或串接 QuickSight 視覺化；Firehose Log Group 可協助除錯。
+1. **建立短碼**：`POST /links` 觸發 create Lambda，寫入 DynamoDB，並同步在事件 bucket 下新增一行 `link_create` JSONL。
+2. **短網址轉址**：`GET /{code}` 觸發 redirect Lambda，查詢 DynamoDB、更新點擊計數，並以非阻塞 PutObject 方式寫入 `link_click` 事件後回傳 `301`。
+3. **其他事件**：更新與刪除也會寫入事件行，維持資料一致。
+4. **資料落地**：S3 依 `{event_type}/dt=YYYY-MM-DD/hour=HH/{code}-{ts}.jsonl` 命名，方便之後用 Glue/Athena 對 JSONL 建外部表。
+5. **分析洞察**：直接用 Athena 查詢、導入 Spark/QuickSight，或串接其他 ETL。Lifecycle 會在 `click_events_retention_days`（預設 30 天）後清理舊資料。
+
+### 成本概覽
+
+- **S3 PUT**：$0.005 / 1,000 次，10k 事件約 $0.05。
+- **S3 儲存**：每筆 JSONL 幾 KB，以 30 天保留估計每月僅需幾毛錢。
+- **Lambda**：執行時間極短，在預期流量下幾乎不可見。
 
 ## 清除資源
 

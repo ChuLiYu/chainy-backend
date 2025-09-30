@@ -4,22 +4,8 @@ import {
   Context,
 } from "aws-lambda";
 import { GetCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
-import { EventBridgeClient, PutEventsCommand } from "@aws-sdk/client-eventbridge";
 import { documentClient, getTableName, ChainyLink } from "../lib/dynamo";
-
-// Lightweight EventBridge client reused across invocations.
-const eventBridgeClient = new EventBridgeClient({});
-
-// Helper to fail fast if the bus name is not configured.
-function getEventBusName(): string {
-  const eventBusName = process.env.CHAINY_EVENT_BUS_NAME;
-
-  if (!eventBusName) {
-    throw new Error("Missing CHAINY_EVENT_BUS_NAME environment variable");
-  }
-
-  return eventBusName;
-}
+import { putDomainEvent } from "../lib/events";
 
 // Standardized JSON response wrapper for error scenarios.
 function jsonResponse(statusCode: number, body: Record<string, unknown>): APIGatewayProxyResultV2 {
@@ -82,34 +68,20 @@ export async function handler(
       }),
     );
 
-    const eventBusName = getEventBusName();
-
-    // Fire-and-forget click analytics; errors are only logged.
-    void eventBridgeClient
-      .send(
-        new PutEventsCommand({
-          Entries: [
-            {
-              EventBusName: eventBusName,
-              Source: "chainy.links",
-              DetailType: "link_click",
-              Time: new Date(),
-              Detail: JSON.stringify({
-                code,
-                target: link.target,
-                owner: link.owner ?? null,
-                click_at: clickTimestamp,
-                user_agent: event.headers?.["user-agent"] ?? null,
-                referer: event.headers?.referer ?? event.headers?.Referer ?? null,
-                environment: process.env.CHAINY_ENVIRONMENT ?? "unknown",
-              }),
-            },
-          ],
-        }),
-      )
-      .catch((error) => {
-        console.error("Failed to emit link_click event", error);
-      });
+    // Fire-and-forget write to S3 so redirects stay snappy.
+    void putDomainEvent({
+      eventType: "link_click",
+      code,
+      detail: {
+        target: link.target,
+        owner: link.owner ?? null,
+        click_at: clickTimestamp,
+        user_agent: event.headers?.["user-agent"] ?? null,
+        referer: event.headers?.referer ?? event.headers?.Referer ?? null,
+      },
+    }).catch((error) => {
+      console.error("Failed to write link_click event to S3", error);
+    });
 
     return {
       statusCode: 301,

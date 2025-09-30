@@ -8,12 +8,9 @@ import {
   PutCommand,
   UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
-import { EventBridgeClient, PutEventsCommand } from "@aws-sdk/client-eventbridge";
 import { randomBytes } from "crypto";
 import { documentClient, getTableName, ChainyLink } from "../lib/dynamo";
-
-// Shared EventBridge client for emitting domain events.
-const eventBridgeClient = new EventBridgeClient({});
+import { putDomainEvent } from "../lib/events";
 
 // Standard headers returned by all JSON responses.
 const defaultHeaders = {
@@ -54,36 +51,6 @@ function generateShortCode(length = 7): string {
   return Array.from(randomBytesBuffer, (byte) => charset[byte % charset.length]).join("");
 }
 
-// Centralized EventBridge emission with basic error handling.
-async function emitDomainEvent(detailType: string, detail: Record<string, unknown>): Promise<void> {
-  const eventBusName = process.env.CHAINY_EVENT_BUS_NAME;
-
-  if (!eventBusName) {
-    console.warn("CHAINY_EVENT_BUS_NAME is not defined; skipping domain event");
-    return;
-  }
-
-  try {
-    await eventBridgeClient.send(
-      new PutEventsCommand({
-        Entries: [
-          {
-            EventBusName: eventBusName,
-            Source: "chainy.links",
-            DetailType: detailType,
-            Detail: JSON.stringify({
-              ...detail,
-              environment: process.env.CHAINY_ENVIRONMENT ?? "unknown",
-            }),
-            Time: new Date(),
-          },
-        ],
-      }),
-    );
-  } catch (error) {
-    console.error(`Failed to emit ${detailType} event`, error);
-  }
-}
 
 // Ensure a valid URL is provided before writing to DynamoDB.
 function assertTargetUrl(target: unknown): string {
@@ -165,13 +132,20 @@ async function handleCreate(event: APIGatewayProxyEventV2): Promise<APIGatewayPr
     throw error;
   }
 
-  await emitDomainEvent("link_create", {
-    code,
-    target,
-    owner: owner ?? null,
-    wallet_address: walletAddress ?? null,
-    created_at: timestamp,
-  });
+  try {
+    await putDomainEvent({
+      eventType: "link_create",
+      code,
+      detail: {
+        target,
+        owner: owner ?? null,
+        wallet_address: walletAddress ?? null,
+        created_at: timestamp,
+      },
+    });
+  } catch (error) {
+    console.error("Failed to write link_create event to S3", error);
+  }
 
   return jsonResponse(201, {
     code,
@@ -243,12 +217,17 @@ async function handleUpdate(event: APIGatewayProxyEventV2): Promise<APIGatewayPr
     return jsonResponse(404, { message: "Short link not found" });
   }
 
-  await emitDomainEvent("link_update", {
+  void putDomainEvent({
+    eventType: "link_update",
     code,
-    target: link.target,
-    owner: link.owner ?? null,
-    wallet_address: link.wallet_address ?? null,
-    updated_at: link.updated_at,
+    detail: {
+      target: link.target,
+      owner: link.owner ?? null,
+      wallet_address: link.wallet_address ?? null,
+      updated_at: link.updated_at,
+    },
+  }).catch((error) => {
+    console.error("Failed to write link_update event to S3", error);
   });
 
   return jsonResponse(200, link);
@@ -299,10 +278,15 @@ async function handleDelete(event: APIGatewayProxyEventV2): Promise<APIGatewayPr
     return jsonResponse(404, { message: "Short link not found" });
   }
 
-  await emitDomainEvent("link_delete", {
+  void putDomainEvent({
+    eventType: "link_delete",
     code,
-    owner: link.owner ?? null,
-    deleted_at: new Date().toISOString(),
+    detail: {
+      owner: link.owner ?? null,
+      deleted_at: new Date().toISOString(),
+    },
+  }).catch((error) => {
+    console.error("Failed to write link_delete event to S3", error);
   });
 
   return {

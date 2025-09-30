@@ -16,7 +16,7 @@ variable "tags" {
 }
 
 variable "retention_days" {
-  description = "Number of days to keep click-event data in the hot S3 tier before transitioning to Glacier."
+  description = "Number of days to keep raw event data in the S3 bucket before lifecycle expiration."
   type        = number
   default     = 30
 }

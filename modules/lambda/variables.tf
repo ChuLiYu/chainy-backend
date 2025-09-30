@@ -25,8 +25,8 @@ variable "table_arn" {
   type        = string
 }
 
-variable "event_bus_name" {
-  description = "EventBridge bus name to publish domain events."
+variable "events_bucket_name" {
+  description = "S3 bucket name where Lambda will store domain events."
   type        = string
 }
 

@@ -11,10 +11,10 @@ terraform {
 
   # Configure remote state storage to keep plans consistent across machines.
   backend "s3" {
-    bucket         = "REPLACE_WITH_CHAINY_TF_STATE_BUCKET"
+    bucket         = "chainy-terraform-state-lui-20240930"
     key            = "env/chainy.tfstate"
     region         = "ap-northeast-1"
-    dynamodb_table = "REPLACE_WITH_CHAINY_TF_LOCKS_TABLE"
+    dynamodb_table = "chainy-terraform-locks"
     encrypt        = true
   }
 }
