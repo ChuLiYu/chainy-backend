@@ -4,6 +4,48 @@ Chainy 是一個協助你同時練習 AWS 與 Terraform 的伺服器無後端短
 
 > Looking for the English version? 請查看 [README.md](README.md)。
 
+## 系統架構示意圖
+
+```mermaid
+flowchart LR
+  subgraph Client
+    User[Browser / Mobile]
+  end
+
+  subgraph AWS
+    APIGW[API Gateway HTTP API]
+    RedirectLambda[Lambda: redirect]
+    CRUDLambda[Lambda: link CRUD]
+    DynamoDB[(DynamoDB: chainy_links)]
+    EventsBucket[(S3: chainy-events-<env>)]
+    CloudWatch[CloudWatch Logs]
+  end
+
+  User -->|HTTP GET /{code}| APIGW
+  User -->|HTTP POST/PUT/GET/DELETE /links| APIGW
+
+  APIGW -->|Invoke| RedirectLambda
+  APIGW -->|Invoke| CRUDLambda
+
+  RedirectLambda -->|Get/Update| DynamoDB
+  CRUDLambda -->|Put/Get/Update/Delete| DynamoDB
+
+  RedirectLambda -->|Async JSONL PutObject| EventsBucket
+  CRUDLambda -->|Async JSONL PutObject| EventsBucket
+
+  RedirectLambda --> CloudWatch
+  CRUDLambda --> CloudWatch
+
+  subgraph Analytics
+    Athena[Athena / Glue]
+    QuickSight[QuickSight / BI]
+  end
+
+  EventsBucket --> Athena
+  Athena --> QuickSight
+
+```
+
 ## 專案結構
 
 ```

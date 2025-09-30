@@ -4,6 +4,48 @@ Chainy is a learning scaffold for building a serverless short URL platform on AW
 
 > 🇹🇼 Looking for the Traditional Chinese guide? See [README_ZH.md](README_ZH.md).
 
+## Architecture Diagram
+
+```mermaid
+flowchart LR
+  subgraph Client
+    User[Browser / Mobile]
+  end
+
+  subgraph AWS
+    APIGW[API Gateway HTTP API]
+    RedirectLambda[Lambda: redirect]
+    CRUDLambda[Lambda: link CRUD]
+    DynamoDB[(DynamoDB: chainy_links)]
+    EventsBucket[(S3: chainy-events-<env>)]
+    CloudWatch[CloudWatch Logs]
+  end
+
+  User -->|HTTP GET /{code}| APIGW
+  User -->|HTTP POST/PUT/GET/DELETE /links| APIGW
+
+  APIGW -->|Invoke| RedirectLambda
+  APIGW -->|Invoke| CRUDLambda
+
+  RedirectLambda -->|Get/Update| DynamoDB
+  CRUDLambda -->|Put/Get/Update/Delete| DynamoDB
+
+  RedirectLambda -->|Async JSONL PutObject| EventsBucket
+  CRUDLambda -->|Async JSONL PutObject| EventsBucket
+
+  RedirectLambda --> CloudWatch
+  CRUDLambda --> CloudWatch
+
+  subgraph Analytics
+    Athena[Athena / Glue]
+    QuickSight[QuickSight / BI]
+  end
+
+  EventsBucket --> Athena
+  Athena --> QuickSight
+
+```
+
 ## Repository Structure
 
 ```
