@@ -42,6 +42,7 @@ module "lambda" {
   create_source_dir   = local.create_source_dir
 
   log_retention_in_days = var.log_retention_in_days
+  additional_environment = var.lambda_additional_environment
 }
 
 # HTTP API Gateway exposing redirect and CRUD routes.

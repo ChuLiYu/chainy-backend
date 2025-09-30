@@ -49,3 +49,9 @@ variable "extra_tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "lambda_additional_environment" {
+  description = "Additional environment variables injected into the Chainy Lambda functions (e.g. salts for hashing)."
+  type        = map(string)
+  default     = {}
+}

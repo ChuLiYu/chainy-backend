@@ -108,6 +108,24 @@ npm run package        # 將 handlers 打包輸出到 dist/redirect 與 dist/cre
 
 只要修改 TypeScript 原始碼，就需要重新執行 `npm run package` 以更新部署內容。
 
+### 參數設定
+
+建議建立 `terraform.tfvars`（或 `dev.tfvars` 等）設定基本變數：
+
+```hcl
+environment = "dev"
+region      = "ap-northeast-1"
+
+lambda_additional_environment = {
+  CHAINY_HASH_SALT    = "請改成隨機鹽值"
+  CHAINY_IP_HASH_SALT = "請改成隨機鹽值"
+}
+```
+
+- `environment` 會影響資源命名與輸出；`region` 預設 `ap-northeast-1`，可依專案需求調整。
+- `lambda_additional_environment` 會注入 Lambda 用於雜湊/遮罩（owner、user-agent、IP 等）。建議使用 `openssl rand -hex 32` 產生獨特鹽值，並依不同環境分別設定。
+- 若不想留在檔案，可改用 `terraform apply -var="..."`、環境變數或 CI/CD Secret 注入。
+
 ## 使用 Terraform 佈署
 
 1. 可自行建立 `terraform.tfvars`（或依照習慣命名）並設定：

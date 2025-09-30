@@ -4,7 +4,7 @@ Chainy 是一個以 AWS Serverless 為基礎的短網址服務腳手架，適合
 
 ## 高階架構圖
 
-```mermaid
+```２２
 flowchart LR
   subgraph Client
     User[使用者（瀏覽器／行動裝置）]

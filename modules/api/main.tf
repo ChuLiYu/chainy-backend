@@ -8,6 +8,13 @@ resource "aws_apigatewayv2_api" "chainy" {
   name          = local.api_name
   protocol_type = "HTTP"
 
+  cors_configuration {
+    allow_origins = ["*"]
+    allow_methods = ["*"]
+    allow_headers = ["content-type", "x-amz-date", "authorization", "x-api-key", "x-amz-security-token"]
+    max_age       = 300
+  }
+
   tags = merge(var.tags, {
     "Name" = local.api_name
   })
@@ -47,7 +54,7 @@ resource "aws_apigatewayv2_route" "create" {
     "DELETE /links/{code}"
   ])
 
-  api_id = aws_apigatewayv2_api.chainy.id
+  api_id    = aws_apigatewayv2_api.chainy.id
   route_key = each.value
   target    = "integrations/${aws_apigatewayv2_integration.links.id}"
 }

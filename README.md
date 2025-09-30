@@ -108,6 +108,24 @@ npm run package        # bundles handlers into dist/redirect and dist/create
 
 Re-run `npm run package` whenever you change the TypeScript source before deploying.
 
+### Configuration variables
+
+Create a `terraform.tfvars` (or environment-specific `dev.tfvars`) with at least:
+
+```hcl
+environment = "dev"
+region      = "ap-northeast-1"
+
+lambda_additional_environment = {
+  CHAINY_HASH_SALT    = "replace-with-random-salt"
+  CHAINY_IP_HASH_SALT = "replace-with-random-ip-salt"
+}
+```
+
+- `environment` 控制資源命名、tag 與輸出；`region` 預設為 `ap-northeast-1`，可依需求調整。
+- `lambda_additional_environment` 會傳入兩個 Lambda，這些環境變數用於雜湊 owner/user-agent/IP。建議使用 `openssl rand -hex 32` 產生隨機鹽值，並依環境（dev/staging/prod）分開設定。
+- 若不想寫在檔案，可在 CLI 執行時帶 `-var` 或以 CI/CD Secrets 注入。
+
 ## Deploying with Terraform
 
 1. Copy `terraform.tfvars.example` → `terraform.tfvars` (create the example file if you prefer) and set values:

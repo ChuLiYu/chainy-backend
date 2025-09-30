@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chainy Short Links</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <h1>Chainy Link Forge</h1>
+        <p class="tagline">
+          Spin up crypto-friendly short URLs and keep analytics flowing to S3.
+        </p>
+      </section>
+
+      <section class="card">
+        <form id="link-form">
+          <label class="field">
+            <span>API Endpoint</span>
+            <input
+              id="apiEndpoint"
+              type="url"
+              placeholder="https://xxxxxx.execute-api.ap-northeast-1.amazonaws.com"
+              required
+            />
+            <small>Paste the HTTP API base URL (no trailing slash).</small>
+          </label>
+
+          <label class="field">
+            <span>Target URL</span>
+            <input
+              id="target"
+              type="url"
+              placeholder="https://luichu.dev/"
+              required
+            />
+          </label>
+
+          <label class="field">
+            <span>Custom Code (optional)</span>
+            <input id="customCode" type="text" placeholder="my-web3-launch" />
+          </label>
+
+          <label class="field">
+            <span>Owner (optional)</span>
+            <input id="owner" type="text" placeholder="alice" />
+          </label>
+
+          <button type="submit">Generate Short Link</button>
+        </form>
+
+        <div id="result" class="result hidden"></div>
+      </section>
+
+      <footer class="footer">
+        <p>
+          Built with <span class="glow">Chainy</span> · Lambda → DynamoDB → S3 events
+        </p>
+      </footer>
+    </main>
+
+    <script src="script.js" type="module"></script>
+  </body>
+</html>

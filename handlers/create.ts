@@ -198,7 +198,16 @@ async function handleCreate(event: APIGatewayProxyEventV2): Promise<APIGatewayPr
   const owner = typeof payload.owner === "string" ? payload.owner : undefined;
   const requestedCode = typeof payload.code === "string" ? payload.code.trim() : undefined;
   const walletAddress = typeof payload.wallet_address === "string" ? payload.wallet_address : undefined;
-  const code = requestedCode && requestedCode.length > 0 ? requestedCode : generateShortCode();
+
+  // Reject custom codes for non-premium users
+  if (requestedCode && requestedCode.length > 0) {
+    return jsonResponse(403, {
+      message: "Custom short codes are a premium feature. Please upgrade to use this feature.",
+      upgrade_required: true
+    });
+  }
+
+  const code = generateShortCode();
   const timestamp = new Date().toISOString();
 
   const item: ChainyLink = {
