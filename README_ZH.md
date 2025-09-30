@@ -141,8 +141,9 @@ npm run package        # 將 handlers 打包輸出到 dist/redirect 與 dist/cre
 
 ### 隱私強化措施
 
-- Lambda 會對 `owner` 與 `user_agent` 做 SHA-256 雜湊，只留摘要供分類分析，不會儲存原始字串。
-- `wallet_address` 只保留前四與最後四碼，中間以 `***` 取代；`referer` 則僅保留來源與路徑，會移除 query string。
+- Lambda 會對 `owner`、`user_agent` 以及來源 IP（若存在）做 SHA-256 雜湊，只留摘要供分類分析，不會儲存原始字串。
+- `wallet_address` 只保留前四與最後四碼，中間以 `***` 取代；`referer` / `target` 則僅保留來源與路徑，會移除 query string。
+- 附帶的地理區域、ASN、使用者語系等資訊都以粗粒度（或雜湊）方式保存，同時從 `user-agent` 推斷裝置/瀏覽器族群，方便後續分析而不外洩敏感原始資料。
 - 每筆資料若有發生遮罩會在 payload 中標記 `sensitive_redacted = true`，方便後續流程判斷。
 
 ### 成本概覽

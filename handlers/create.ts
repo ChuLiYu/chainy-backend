@@ -9,8 +9,8 @@ import {
   UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { randomBytes } from "crypto";
-import { documentClient, getTableName, ChainyLink } from "../lib/dynamo";
-import { putDomainEvent } from "../lib/events";
+import { documentClient, getTableName, ChainyLink } from "../lib/dynamo.js";
+import { putDomainEvent } from "../lib/events.js";
 
 // Standard headers returned by all JSON responses.
 const defaultHeaders = {
@@ -18,11 +18,38 @@ const defaultHeaders = {
   "Cache-Control": "no-store",
 };
 
+// Normalise header lookup regardless of casing.
+function headerLookup(event: APIGatewayProxyEventV2, name: string): string | undefined {
+  const headers = event.headers ?? {};
+  return headers[name] ?? headers[name.toLowerCase()];
+}
+
+// Collect request metadata that flows into the events pipeline.
+function extractRequestMetadata(event: APIGatewayProxyEventV2) {
+  const headers = event.headers ?? {};
+  const requestContext = event.requestContext;
+  const http = requestContext.http ?? ({} as typeof requestContext.http);
+
+  const xForwardedFor = headerLookup(event, "x-forwarded-for");
+  const sourceIp = http?.sourceIp ?? xForwardedFor?.split(",")[0]?.trim();
+
+  return {
+    user_agent: headerLookup(event, "user-agent"),
+    referer: headerLookup(event, "referer") ?? headerLookup(event, "referrer"),
+    accept_language: headerLookup(event, "accept-language"),
+    ip_address: sourceIp,
+    geo_country:
+      headerLookup(event, "cloudfront-viewer-country") ?? headerLookup(event, "x-appengine-country"),
+    geo_region:
+      headerLookup(event, "cloudfront-viewer-country-region") ?? headerLookup(event, "x-appengine-region"),
+    geo_city:
+      headerLookup(event, "cloudfront-viewer-city") ?? headerLookup(event, "x-appengine-city"),
+    ip_asn: headerLookup(event, "cloudfront-viewer-asn"),
+  };
+}
+
 // Helper for crafting JSON API responses.
-function jsonResponse(
-  statusCode: number,
-  body: Record<string, unknown> | Array<unknown>,
-): APIGatewayProxyResultV2 {
+function jsonResponse(statusCode: number, body: unknown): APIGatewayProxyResultV2 {
   return {
     statusCode,
     headers: defaultHeaders,
@@ -141,9 +168,10 @@ async function handleCreate(event: APIGatewayProxyEventV2): Promise<APIGatewayPr
         owner: owner ?? null,
         wallet_address: walletAddress ?? null,
         created_at: timestamp,
+        ...extractRequestMetadata(event),
       },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Failed to write link_create event to S3", error);
   }
 
@@ -225,8 +253,9 @@ async function handleUpdate(event: APIGatewayProxyEventV2): Promise<APIGatewayPr
       owner: link.owner ?? null,
       wallet_address: link.wallet_address ?? null,
       updated_at: link.updated_at,
+      ...extractRequestMetadata(event),
     },
-  }).catch((error) => {
+  }).catch((error: unknown) => {
     console.error("Failed to write link_update event to S3", error);
   });
 
@@ -284,8 +313,9 @@ async function handleDelete(event: APIGatewayProxyEventV2): Promise<APIGatewayPr
     detail: {
       owner: link.owner ?? null,
       deleted_at: new Date().toISOString(),
+      ...extractRequestMetadata(event),
     },
-  }).catch((error) => {
+  }).catch((error: unknown) => {
     console.error("Failed to write link_delete event to S3", error);
   });
 
