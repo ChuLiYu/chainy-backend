@@ -1,58 +1,61 @@
-# Chainy – AWS/Terraform 短網址腳手架
+# Chainy – AWS/Terraform URL Shortener Scaffold
 
-Chainy 是一個協助你同時練習 AWS 與 Terraform 的伺服器無後端短網址服務腳手架。它整合 HTTP API、Lambda、DynamoDB 以及非同步點擊事件管線（EventBridge → Kinesis Firehose → S3），讓你能專注在功能迭代與雲端實戰。
+Chainy is a learning scaffold for building a serverless short URL platform on AWS with Terraform. It wires together an HTTP API, Lambda functions, DynamoDB storage, and an asynchronous click-event pipeline (EventBridge → Kinesis Firehose → S3) so you can focus on iterating and deepening your AWS + Terraform skills.
 
-## 專案結構
+> 🇹🇼 Looking for the Traditional Chinese guide? See [README_ZH.md](README_ZH.md).
+
+## Repository Structure
 
 ```
-backend.tf              # Terraform 遠端狀態設定（請改成你自己的 S3/DynamoDB 資訊）
-main.tf                 # Root module 負責串接所有子模組
-tfvars/                 # 建議放環境專屬的變數檔（可自行建立）
+backend.tf              # Remote state definition (edit with your S3/DynamoDB details)
+main.tf                 # Root module wiring all submodules
+tfvars/                 # (optional) directory for environment-specific tfvars files
 modules/
-  api/                  # API Gateway HTTP API、路由與 Lambda 權限
-  db/                   # DynamoDB 短網址資料表
-  events/               # EventBridge + Firehose + S3 點擊事件管線
-  lambda/               # Redirect 與 CRUD Lambda 及其 IAM 設定
-handlers/               # Lambda TypeScript 原始碼
-lib/                    # 共享的 DynamoDB 工具
-scripts/                # esbuild 打包腳本
-dist/                   # `npm run package` 產出的 Lambda Bundle
-README.md               # 本文件
-variables.tf            # Root module 需要的輸入變數
-outputs.tf              # Terraform 輸出的重點資訊
+  api/                  # API Gateway HTTP API + routes + Lambda permissions
+  db/                   # DynamoDB table definition for short links
+  events/               # EventBridge bus, Firehose stream, and S3 analytics bucket
+  lambda/               # Redirect + CRUD Lambdas and IAM roles
+handlers/               # TypeScript Lambda sources
+lib/                    # Shared TypeScript utilities (DynamoDB client)
+scripts/                # esbuild bundling script for Lambda packages
+dist/                   # Generated Lambda bundles (created by `npm run package`)
+README.md               # English documentation
+README_ZH.md            # Traditional Chinese documentation
+variables.tf            # Root input variables
+outputs.tf              # Root outputs
 package.json, tsconfig.json
 ```
 
-## 事前準備
+## Prerequisites
 
-- Terraform 1.9 以上
-- 已設定憑證的 AWS CLI（需有佈署資源的權限）
-- Node.js 20 以上
+- Terraform 1.9+
+- AWS CLI configured with credentials that can provision the resources
+- Node.js 20+
 
-### 遠端狀態初始化（一次性）
+### One-time remote state setup
 
-1. 建立專用的 S3 Bucket（例如 `chainy-terraform-state`）。
-2. 建立 DynamoDB Table（例如 `chainy-terraform-locks`），Primary key 為 `LockID` (String)。
-3. 將 `backend.tf` 裡的 bucket、key、region、dynamodb_table 改成你自己的設定。
+1. Create an S3 bucket for Terraform state (e.g. `chainy-terraform-state`).
+2. Create a DynamoDB table for state locking (e.g. `chainy-terraform-locks`) with primary key `LockID` (string).
+3. Update `backend.tf` with your bucket, key prefix, region, and DynamoDB table.
 
-## Lambda 打包流程
+## Lambda packaging workflow
 
-Terraform 會讀取 `dist/redirect` 與 `dist/create` 底下的檔案，因此在 `terraform plan/apply` 前務必先打包：
+The Lambda module expects pre-built bundles under `dist/redirect` and `dist/create` before you run `terraform plan` or `terraform apply`. Use the included Node tooling:
 
 ```bash
-npm install            # 安裝 TypeScript、esbuild 與 AWS SDK
-npm run package        # 將 handlers 打包輸出到 dist/redirect 與 dist/create
+npm install            # install TypeScript + esbuild + AWS SDK
+npm run package        # bundles handlers into dist/redirect and dist/create
 ```
 
-只要修改 TypeScript 原始碼，就需要重新執行 `npm run package` 以更新部署內容。
+Re-run `npm run package` whenever you change the TypeScript source before deploying.
 
-## 使用 Terraform 佈署
+## Deploying with Terraform
 
-1. 可自行建立 `terraform.tfvars`（或依照習慣命名）並設定：
+1. Copy `terraform.tfvars.example` → `terraform.tfvars` (create the example file if you prefer) and set values:
    - `environment = "dev"`
-   - `region = "ap-northeast-1"`（或你偏好的區域）
-   - 其他選項如 `redirect_build_dir`、`create_build_dir`、`extra_tags` 可視需求調整。
-2. 初始化：
+   - `region = "ap-northeast-1"` (or your preferred region)
+   - Optional overrides: `redirect_build_dir`, `create_build_dir`, `extra_tags`.
+2. Initialize:
 
    ```bash
    terraform init -backend-config="bucket=your-state-bucket" \
@@ -61,32 +64,32 @@ npm run package        # 將 handlers 打包輸出到 dist/redirect 與 dist/cre
                   -backend-config="dynamodb_table=your-lock-table"
    ```
 
-3. 驗證設定：
+3. Validate the configuration:
 
    ```bash
-   terraform fmt        # 可選，整理格式
+   terraform fmt      # optional formatting
    terraform validate
    ```
 
-4. 檢視變更：
+4. Review the plan:
 
    ```bash
    terraform plan -var="environment=dev"
    ```
 
-5. 正式佈署：
+5. Apply when ready:
 
    ```bash
    terraform apply -var="environment=dev"
    ```
 
-完成後會輸出 API endpoint、DynamoDB 資料表、EventBridge Bus、S3 Bucket 等資訊。
+Terraform outputs include the API endpoint, DynamoDB table name, EventBridge bus, and click-event bucket.
 
-## 測試 API
+## Testing the API
 
-`terraform apply` 後，記下輸出的 `api_endpoint`（例如 `https://abc123.execute-api.ap-northeast-1.amazonaws.com`）。
+After `terraform apply`, note the `api_endpoint` output (e.g. `https://abc123.execute-api.ap-northeast-1.amazonaws.com`).
 
-1. **建立短網址**
+1. **Create a short link**
 
    ```bash
    curl -X POST "$API_ENDPOINT/links" \
@@ -94,17 +97,17 @@ npm run package        # 將 handlers 打包輸出到 dist/redirect 與 dist/cre
      -d '{"target": "https://example.com/docs", "owner": "alice"}'
    ```
 
-   回應會帶回產生的短碼 `code`。
+   Response includes the generated `code`.
 
-2. **測試轉址**
+2. **Resolve a short link**
 
    ```bash
    curl -I "$API_ENDPOINT/yourCode"
    ```
 
-   預期回傳 `301` 並在 `Location` header 中顯示原始網址。
+   Expect a `301` with `Location: https://example.com/docs`.
 
-3. **查詢 / 更新 / 刪除**
+3. **Inspect or manage a link**
 
    ```bash
    curl "$API_ENDPOINT/links/yourCode"
@@ -114,28 +117,28 @@ npm run package        # 將 handlers 打包輸出到 dist/redirect 與 dist/cre
    curl -X DELETE "$API_ENDPOINT/links/yourCode"
    ```
 
-## 資料流程說明
+## Data flow overview
 
-1. **建立短碼**：`POST /links` 觸發 create Lambda，寫入 DynamoDB 並送出 `link_create` 事件到 EventBridge。
-2. **短網址轉址**：`GET /{code}` 觸發 redirect Lambda，查詢 DynamoDB、更新點擊計數、非阻塞地送出 `link_click` 事件，並回傳 `301`。
-3. **事件管線**：EventBridge 依規則將事件轉送至 Kinesis Firehose。
-4. **資料落地**：Firehose 批次寫入 S3，並以日期分區。
-5. **分析洞察**：可使用 Athena 查詢或串接 QuickSight 視覺化；Firehose Log Group 可協助除錯。
+1. **Link creation**: `POST /links` triggers the create Lambda, which writes metadata to DynamoDB and emits a `link_create` event to EventBridge.
+2. **Redirect**: `GET /{code}` invokes the redirect Lambda. It looks up the target in DynamoDB, increments click counters, sends a non-blocking `link_click` event, and returns a `301` response.
+3. **Event pipeline**: EventBridge routes `link_click` (and other lifecycle events) to a Kinesis Firehose delivery stream.
+4. **Analytics storage**: Firehose batches events into the S3 analytics bucket, partitioned by date.
+5. **Insights**: Query the S3 data with Athena or visualize with QuickSight. The Firehose log group helps troubleshoot failures.
 
-## 清除資源
+## Cleaning up
 
-若要移除整個環境：
+When you want to tear down the scaffold, run:
 
 ```bash
 terraform destroy -var="environment=dev"
 ```
 
-## 後續擴充方向
+## Future enhancements
 
-1. **CloudFront + 自訂網域**：以 ACM 憑證搭配 CloudFront，提供自訂網域與快取。
-2. **Cognito + OAuth**：透過 Cognito 或聯邦帳號保護 CRUD API。
-3. **QuickSight Dashboard**：將 S3/Athena 的點擊資料視覺化。
-4. **Budgets / 成本警示**：建立 AWS Budgets 或 Cost Anomaly Detection。
-5. **GitHub Actions CI/CD**：設定 OIDC 信任關係，於 GitHub 自動化佈署與驗證。
+1. **CloudFront + Custom Domain** – front the API and redirects with a custom hostname and SSL certificate managed by ACM.
+2. **Cognito + OAuth** – secure CRUD APIs with Cognito-hosted auth flows or federated identity providers.
+3. **QuickSight Dashboard** – visualize click analytics sourced from the S3/Athena dataset.
+4. **Budgets + Alerts** – add AWS Budgets or Cost Anomaly Detection to avoid surprises.
+5. **GitHub Actions CI/CD** – configure an OIDC trust to deploy Terraform plans from GitHub securely.
 
-祝你順利學習 AWS SAA 與 Terraform Associate！
+Happy building and good luck studying for AWS SAA + Terraform Associate!
