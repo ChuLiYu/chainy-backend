@@ -7,6 +7,14 @@ locals {
 
   redirect_source_dir = abspath(var.redirect_build_dir)
   create_source_dir   = abspath(var.create_build_dir)
+
+  hash_salt_parameter_name = var.hash_salt_parameter_name != null ? var.hash_salt_parameter_name : "/chainy/${var.environment}/CHAINY_HASH_SALT"
+  ip_salt_parameter_name   = var.ip_hash_salt_parameter_name != null ? var.ip_hash_salt_parameter_name : "/chainy/${var.environment}/CHAINY_IP_HASH_SALT"
+
+  lambda_environment = merge(var.lambda_additional_environment, {
+    CHAINY_HASH_SALT_PARAM    = local.hash_salt_parameter_name
+    CHAINY_IP_HASH_SALT_PARAM = local.ip_salt_parameter_name
+  })
 }
 
 # Provision the DynamoDB table that stores short link metadata.
@@ -42,7 +50,11 @@ module "lambda" {
   create_source_dir   = local.create_source_dir
 
   log_retention_in_days  = var.log_retention_in_days
-  additional_environment = var.lambda_additional_environment
+  additional_environment = local.lambda_environment
+  hash_salt_parameter_name = local.hash_salt_parameter_name
+  ip_hash_salt_parameter_name = local.ip_salt_parameter_name
+  hash_salt_fallback = var.hash_salt_fallback
+  ip_hash_salt_fallback = var.ip_hash_salt_fallback
 }
 
 # HTTP API Gateway exposing redirect and CRUD routes.

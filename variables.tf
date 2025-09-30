@@ -56,6 +56,30 @@ variable "lambda_additional_environment" {
   default     = {}
 }
 
+variable "hash_salt_parameter_name" {
+  description = "SSM parameter name storing the hash salt. Defaults to /chainy/<environment>/CHAINY_HASH_SALT."
+  type        = string
+  default     = null
+}
+
+variable "ip_hash_salt_parameter_name" {
+  description = "SSM parameter name storing the IP hash salt. Defaults to /chainy/<environment>/CHAINY_IP_HASH_SALT."
+  type        = string
+  default     = null
+}
+
+variable "hash_salt_fallback" {
+  description = "Fallback hash salt value if SSM parameter retrieval fails."
+  type        = string
+  default     = ""
+}
+
+variable "ip_hash_salt_fallback" {
+  description = "Fallback IP hash salt value if SSM parameter retrieval fails."
+  type        = string
+  default     = ""
+}
+
 variable "web_domain" {
   description = "(Optional) Root domain (e.g. example.com) used for hosting the Chainy web front-end. Leave null to skip front-end infrastructure."
   type        = string

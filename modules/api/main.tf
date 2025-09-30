@@ -63,13 +63,13 @@ resource "aws_apigatewayv2_route" "create" {
 }
 
 # API Key for authentication
-resource "aws_apigatewayv2_api_key" "chainy" {
+resource "aws_api_gateway_api_key" "chainy" {
   name = "${local.api_name}-key"
   tags = var.tags
 }
 
 # Usage Plan for API Key
-resource "aws_apigatewayv2_usage_plan" "chainy" {
+resource "aws_api_gateway_usage_plan" "chainy" {
   name = "${local.api_name}-usage-plan"
   
   api_stages {
@@ -91,10 +91,10 @@ resource "aws_apigatewayv2_usage_plan" "chainy" {
 }
 
 # Associate API Key with Usage Plan
-resource "aws_apigatewayv2_usage_plan_key" "chainy" {
-  key_id        = aws_apigatewayv2_api_key.chainy.id
+resource "aws_api_gateway_usage_plan_key" "chainy" {
+  key_id        = aws_api_gateway_api_key.chainy.id
   key_type      = "API_KEY"
-  usage_plan_id = aws_apigatewayv2_usage_plan.chainy.id
+  usage_plan_id = aws_api_gateway_usage_plan.chainy.id
 }
 
 # Use the default stage with modest throttling defaults.
