@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "crypto";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { GetParameterCommand } from "@aws-sdk/client-ssm";
 import { buildObjectKey, putDomainEvent } from "../lib/events.ts";
 
 test("buildObjectKey partitions by event type and timestamp", () => {
@@ -14,11 +15,17 @@ test("buildObjectKey partitions by event type and timestamp", () => {
 test("putDomainEvent writes JSONL payload to the expected bucket/key", async () => {
   const originalBucket = process.env.CHAINY_EVENTS_BUCKET_NAME;
   const originalEnv = process.env.CHAINY_ENVIRONMENT;
-  const originalSalt = process.env.CHAINY_HASH_SALT;
+  const originalHashSaltParam = process.env.CHAINY_HASH_SALT_PARAM;
+  const originalIpHashSaltParam = process.env.CHAINY_IP_HASH_SALT_PARAM;
+  const originalHashSalt = process.env.CHAINY_HASH_SALT;
+  const originalIpHashSalt = process.env.CHAINY_IP_HASH_SALT;
 
   process.env.CHAINY_EVENTS_BUCKET_NAME = "chainy-events-dev";
   process.env.CHAINY_ENVIRONMENT = "dev";
-  delete process.env.CHAINY_HASH_SALT;
+  process.env.CHAINY_HASH_SALT_PARAM = "/chainy/dev/hash-salt";
+  process.env.CHAINY_IP_HASH_SALT_PARAM = "/chainy/dev/ip-hash-salt";
+  process.env.CHAINY_HASH_SALT = "test-hash-salt";
+  process.env.CHAINY_IP_HASH_SALT = "test-ip-hash-salt";
 
   const commands: PutObjectCommand[] = [];
   const fakeClient = {
@@ -110,9 +117,9 @@ test("putDomainEvent writes JSONL payload to the expected bucket/key", async () 
   assert.deepEqual(parsed.tags, ["defi", "nft"]);
   assert.deepEqual(parsed.feature_flags, ["beta-users", "whale-tier"]);
   assert.equal(parsed.referer_origin, "https://ref.example.com/page");
-  assert.equal(parsed.user_agent_hash, createHash("sha256").update(userAgent).digest("hex"));
-  assert.equal(parsed.owner_hash, createHash("sha256").update("alice").digest("hex"));
-  assert.equal(parsed.ip_hash, createHash("sha256").update("203.0.113.9").digest("hex"));
+  assert.equal(parsed.user_agent_hash, createHash("sha256").update(`test-hash-salt${userAgent}`).digest("hex"));
+  assert.equal(parsed.owner_hash, createHash("sha256").update(`test-hash-saltalice`).digest("hex"));
+  assert.equal(parsed.ip_hash, createHash("sha256").update(`test-ip-hash-salt203.0.113.9`).digest("hex"));
   assert.equal(parsed.geo_country, "CA");
   assert.equal(parsed.geo_region, "QC");
   assert.equal(parsed.geo_city, "Montreal");
@@ -148,16 +155,43 @@ test("putDomainEvent writes JSONL payload to the expected bucket/key", async () 
     process.env.CHAINY_ENVIRONMENT = originalEnv;
   }
 
-  if (originalSalt === undefined) {
+  if (originalHashSaltParam === undefined) {
+    delete process.env.CHAINY_HASH_SALT_PARAM;
+  } else {
+    process.env.CHAINY_HASH_SALT_PARAM = originalHashSaltParam;
+  }
+
+  if (originalIpHashSaltParam === undefined) {
+    delete process.env.CHAINY_IP_HASH_SALT_PARAM;
+  } else {
+    process.env.CHAINY_IP_HASH_SALT_PARAM = originalIpHashSaltParam;
+  }
+
+  if (originalHashSalt === undefined) {
     delete process.env.CHAINY_HASH_SALT;
   } else {
-    process.env.CHAINY_HASH_SALT = originalSalt;
+    process.env.CHAINY_HASH_SALT = originalHashSalt;
+  }
+
+  if (originalIpHashSalt === undefined) {
+    delete process.env.CHAINY_IP_HASH_SALT;
+  } else {
+    process.env.CHAINY_IP_HASH_SALT = originalIpHashSalt;
   }
 });
 
 test("putDomainEvent throws if events bucket env var missing", async () => {
   const originalBucket = process.env.CHAINY_EVENTS_BUCKET_NAME;
+  const originalHashSaltParam = process.env.CHAINY_HASH_SALT_PARAM;
+  const originalIpHashSaltParam = process.env.CHAINY_IP_HASH_SALT_PARAM;
+  const originalHashSalt = process.env.CHAINY_HASH_SALT;
+  const originalIpHashSalt = process.env.CHAINY_IP_HASH_SALT;
+
   delete process.env.CHAINY_EVENTS_BUCKET_NAME;
+  process.env.CHAINY_HASH_SALT_PARAM = "/chainy/dev/hash-salt";
+  process.env.CHAINY_IP_HASH_SALT_PARAM = "/chainy/dev/ip-hash-salt";
+  process.env.CHAINY_HASH_SALT = "test-hash-salt";
+  process.env.CHAINY_IP_HASH_SALT = "test-ip-hash-salt";
 
   await assert.rejects(
     () =>
@@ -174,14 +208,46 @@ test("putDomainEvent throws if events bucket env var missing", async () => {
   } else {
     process.env.CHAINY_EVENTS_BUCKET_NAME = originalBucket;
   }
+
+  if (originalHashSaltParam === undefined) {
+    delete process.env.CHAINY_HASH_SALT_PARAM;
+  } else {
+    process.env.CHAINY_HASH_SALT_PARAM = originalHashSaltParam;
+  }
+
+  if (originalIpHashSaltParam === undefined) {
+    delete process.env.CHAINY_IP_HASH_SALT_PARAM;
+  } else {
+    process.env.CHAINY_IP_HASH_SALT_PARAM = originalIpHashSaltParam;
+  }
+
+  if (originalHashSalt === undefined) {
+    delete process.env.CHAINY_HASH_SALT;
+  } else {
+    process.env.CHAINY_HASH_SALT = originalHashSalt;
+  }
+
+  if (originalIpHashSalt === undefined) {
+    delete process.env.CHAINY_IP_HASH_SALT;
+  } else {
+    process.env.CHAINY_IP_HASH_SALT = originalIpHashSalt;
+  }
 });
 
 test("putDomainEvent normalises string tag inputs", async () => {
   const originalBucket = process.env.CHAINY_EVENTS_BUCKET_NAME;
   const originalEnv = process.env.CHAINY_ENVIRONMENT;
+  const originalHashSaltParam = process.env.CHAINY_HASH_SALT_PARAM;
+  const originalIpHashSaltParam = process.env.CHAINY_IP_HASH_SALT_PARAM;
+  const originalHashSalt = process.env.CHAINY_HASH_SALT;
+  const originalIpHashSalt = process.env.CHAINY_IP_HASH_SALT;
 
   process.env.CHAINY_EVENTS_BUCKET_NAME = "chainy-events-dev";
   process.env.CHAINY_ENVIRONMENT = "dev";
+  process.env.CHAINY_HASH_SALT_PARAM = "/chainy/dev/hash-salt";
+  process.env.CHAINY_IP_HASH_SALT_PARAM = "/chainy/dev/ip-hash-salt";
+  process.env.CHAINY_HASH_SALT = "test-hash-salt";
+  process.env.CHAINY_IP_HASH_SALT = "test-ip-hash-salt";
 
   const commands: PutObjectCommand[] = [];
   const fakeClient = {
@@ -227,5 +293,174 @@ test("putDomainEvent normalises string tag inputs", async () => {
     delete process.env.CHAINY_ENVIRONMENT;
   } else {
     process.env.CHAINY_ENVIRONMENT = originalEnv;
+  }
+
+  if (originalHashSaltParam === undefined) {
+    delete process.env.CHAINY_HASH_SALT_PARAM;
+  } else {
+    process.env.CHAINY_HASH_SALT_PARAM = originalHashSaltParam;
+  }
+
+  if (originalIpHashSaltParam === undefined) {
+    delete process.env.CHAINY_IP_HASH_SALT_PARAM;
+  } else {
+    process.env.CHAINY_IP_HASH_SALT_PARAM = originalIpHashSaltParam;
+  }
+
+  if (originalHashSalt === undefined) {
+    delete process.env.CHAINY_HASH_SALT;
+  } else {
+    process.env.CHAINY_HASH_SALT = originalHashSalt;
+  }
+
+  if (originalIpHashSalt === undefined) {
+    delete process.env.CHAINY_IP_HASH_SALT;
+  } else {
+    process.env.CHAINY_IP_HASH_SALT = originalIpHashSalt;
+  }
+});
+
+test("putDomainEvent throws if SSM parameter names are missing", async () => {
+  const originalBucket = process.env.CHAINY_EVENTS_BUCKET_NAME;
+  const originalEnv = process.env.CHAINY_ENVIRONMENT;
+  const originalHashSaltParam = process.env.CHAINY_HASH_SALT_PARAM;
+  const originalIpHashSaltParam = process.env.CHAINY_IP_HASH_SALT_PARAM;
+  const originalHashSalt = process.env.CHAINY_HASH_SALT;
+  const originalIpHashSalt = process.env.CHAINY_IP_HASH_SALT;
+
+  process.env.CHAINY_EVENTS_BUCKET_NAME = "chainy-events-dev";
+  process.env.CHAINY_ENVIRONMENT = "dev";
+  delete process.env.CHAINY_HASH_SALT_PARAM;
+  delete process.env.CHAINY_IP_HASH_SALT_PARAM;
+  delete process.env.CHAINY_HASH_SALT;
+  delete process.env.CHAINY_IP_HASH_SALT;
+
+  await assert.rejects(
+    () =>
+      putDomainEvent({
+        eventType: "link_delete",
+        code: "xyz",
+        detail: {},
+      }),
+    /Missing required environment variables: CHAINY_HASH_SALT_PARAM and CHAINY_IP_HASH_SALT_PARAM/,
+  );
+
+  if (originalBucket === undefined) {
+    delete process.env.CHAINY_EVENTS_BUCKET_NAME;
+  } else {
+    process.env.CHAINY_EVENTS_BUCKET_NAME = originalBucket;
+  }
+
+  if (originalEnv === undefined) {
+    delete process.env.CHAINY_ENVIRONMENT;
+  } else {
+    process.env.CHAINY_ENVIRONMENT = originalEnv;
+  }
+
+  if (originalHashSaltParam === undefined) {
+    delete process.env.CHAINY_HASH_SALT_PARAM;
+  } else {
+    process.env.CHAINY_HASH_SALT_PARAM = originalHashSaltParam;
+  }
+
+  if (originalIpHashSaltParam === undefined) {
+    delete process.env.CHAINY_IP_HASH_SALT_PARAM;
+  } else {
+    process.env.CHAINY_IP_HASH_SALT_PARAM = originalIpHashSaltParam;
+  }
+
+  if (originalHashSalt === undefined) {
+    delete process.env.CHAINY_HASH_SALT;
+  } else {
+    process.env.CHAINY_HASH_SALT = originalHashSalt;
+  }
+
+  if (originalIpHashSalt === undefined) {
+    delete process.env.CHAINY_IP_HASH_SALT;
+  } else {
+    process.env.CHAINY_IP_HASH_SALT = originalIpHashSalt;
+  }
+});
+
+test("putDomainEvent uses fallback environment variables when SSM fails", async () => {
+  const originalBucket = process.env.CHAINY_EVENTS_BUCKET_NAME;
+  const originalEnv = process.env.CHAINY_ENVIRONMENT;
+  const originalHashSaltParam = process.env.CHAINY_HASH_SALT_PARAM;
+  const originalIpHashSaltParam = process.env.CHAINY_IP_HASH_SALT_PARAM;
+  const originalHashSalt = process.env.CHAINY_HASH_SALT;
+  const originalIpHashSalt = process.env.CHAINY_IP_HASH_SALT;
+
+  process.env.CHAINY_EVENTS_BUCKET_NAME = "chainy-events-dev";
+  process.env.CHAINY_ENVIRONMENT = "dev";
+  process.env.CHAINY_HASH_SALT_PARAM = "/chainy/dev/hash-salt";
+  process.env.CHAINY_IP_HASH_SALT_PARAM = "/chainy/dev/ip-hash-salt";
+  process.env.CHAINY_HASH_SALT = "fallback-hash-salt";
+  process.env.CHAINY_IP_HASH_SALT = "fallback-ip-hash-salt";
+
+  const commands: PutObjectCommand[] = [];
+  const fakeClient = {
+    send: async (command: PutObjectCommand) => {
+      commands.push(command);
+      return {};
+    },
+  } as const;
+
+  // This test verifies that the function falls back to environment variables
+  // when SSM fails, which is the current behavior in our implementation
+  await putDomainEvent(
+    {
+      eventType: "link_click",
+      code: "test123",
+      detail: {
+        owner: "testuser",
+        ip_address: "192.168.1.1",
+      },
+    },
+    fakeClient,
+  );
+
+  assert.equal(commands.length, 1, "expected a single PutObjectCommand");
+
+  const body = commands[0].input.Body?.toString() ?? "";
+  const parsed = JSON.parse(body);
+  
+  // Verify that hashes are computed with fallback salts
+  assert.equal(parsed.owner_hash, createHash("sha256").update(`fallback-hash-salttestuser`).digest("hex"));
+  assert.equal(parsed.ip_hash, createHash("sha256").update(`fallback-ip-hash-salt192.168.1.1`).digest("hex"));
+
+  if (originalBucket === undefined) {
+    delete process.env.CHAINY_EVENTS_BUCKET_NAME;
+  } else {
+    process.env.CHAINY_EVENTS_BUCKET_NAME = originalBucket;
+  }
+
+  if (originalEnv === undefined) {
+    delete process.env.CHAINY_ENVIRONMENT;
+  } else {
+    process.env.CHAINY_ENVIRONMENT = originalEnv;
+  }
+
+  if (originalHashSaltParam === undefined) {
+    delete process.env.CHAINY_HASH_SALT_PARAM;
+  } else {
+    process.env.CHAINY_HASH_SALT_PARAM = originalHashSaltParam;
+  }
+
+  if (originalIpHashSaltParam === undefined) {
+    delete process.env.CHAINY_IP_HASH_SALT_PARAM;
+  } else {
+    process.env.CHAINY_IP_HASH_SALT_PARAM = originalIpHashSaltParam;
+  }
+
+  if (originalHashSalt === undefined) {
+    delete process.env.CHAINY_HASH_SALT;
+  } else {
+    process.env.CHAINY_HASH_SALT = originalHashSalt;
+  }
+
+  if (originalIpHashSalt === undefined) {
+    delete process.env.CHAINY_IP_HASH_SALT;
+  } else {
+    process.env.CHAINY_IP_HASH_SALT = originalIpHashSalt;
   }
 });

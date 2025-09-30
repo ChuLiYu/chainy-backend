@@ -1,9 +1,87 @@
 import { createHash } from "crypto";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { SSMClient, GetParameterCommand } from "@aws-sdk/client-ssm";
 
 const s3Client = new S3Client({});
+const ssmClient = new SSMClient({});
 const UTM_FIELDS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"] as const;
 const MAX_TAGS = 10;
+
+// Cache for SSM parameters to avoid repeated calls
+const parameterCache = new Map<string, { value: string; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache TTL
+
+// Get parameter from SSM Parameter Store with caching
+async function getParameterFromSSM(parameterName: string): Promise<string> {
+  // Check cache first
+  const cached = parameterCache.get(parameterName);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.value;
+  }
+
+  try {
+    const command = new GetParameterCommand({
+      Name: parameterName,
+      WithDecryption: true, // For SecureString parameters
+    });
+
+    const response = await ssmClient.send(command);
+    
+    if (!response.Parameter?.Value) {
+      throw new Error(`Parameter ${parameterName} not found or has no value`);
+    }
+
+    // Cache the result
+    parameterCache.set(parameterName, {
+      value: response.Parameter.Value,
+      timestamp: Date.now(),
+    });
+
+    return response.Parameter.Value;
+  } catch (error) {
+    console.error(`Failed to get parameter ${parameterName}:`, error);
+    throw new Error(`Failed to retrieve parameter ${parameterName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+// Get hash salts from SSM Parameter Store with fallback
+async function getHashSalts(): Promise<{ hashSalt: string; ipHashSalt: string }> {
+  const hashSaltParam = process.env.CHAINY_HASH_SALT_PARAM;
+  const ipHashSaltParam = process.env.CHAINY_IP_HASH_SALT_PARAM;
+
+  if (!hashSaltParam || !ipHashSaltParam) {
+    throw new Error(
+      "Missing required environment variables: CHAINY_HASH_SALT_PARAM and CHAINY_IP_HASH_SALT_PARAM"
+    );
+  }
+
+  try {
+    const [hashSalt, ipHashSalt] = await Promise.all([
+      getParameterFromSSM(hashSaltParam),
+      getParameterFromSSM(ipHashSaltParam),
+    ]);
+
+    return { hashSalt, ipHashSalt };
+  } catch (error) {
+    console.error("Failed to get hash salts from SSM:", error);
+    
+    // Fallback to environment variables if SSM fails
+    const fallbackHashSalt = process.env.CHAINY_HASH_SALT;
+    const fallbackIpHashSalt = process.env.CHAINY_IP_HASH_SALT;
+    
+    if (fallbackHashSalt && fallbackIpHashSalt) {
+      console.warn("Using fallback hash salts from environment variables");
+      return {
+        hashSalt: fallbackHashSalt,
+        ipHashSalt: fallbackIpHashSalt,
+      };
+    }
+    
+    throw new Error(
+      `Failed to get hash salts from SSM and no fallback environment variables available: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+  }
+}
 
 // Resolve events bucket injected through Lambda environment variables.
 function getEventsBucketName(): string {
@@ -131,13 +209,16 @@ function toNumber(value: unknown, precision = 8): number | undefined {
 }
 
 // Remove or coarsen sensitive values before persisting the event record.
-function sanitizeDetail(detail: Record<string, unknown>): Record<string, unknown> {
+function sanitizeDetail(
+  detail: Record<string, unknown>,
+  hashSalt: string,
+  ipHashSalt: string,
+): Record<string, unknown> {
   const sanitized: Record<string, unknown> = { ...detail };
   let redacted = false;
-  const salt = process.env.CHAINY_IP_HASH_SALT ?? process.env.CHAINY_HASH_SALT;
 
   if (typeof detail.owner === "string" && detail.owner.trim().length > 0) {
-    sanitized.owner_hash = sha256(detail.owner.trim(), salt);
+    sanitized.owner_hash = sha256(detail.owner.trim(), hashSalt);
     delete sanitized.owner;
     redacted = true;
   }
@@ -223,7 +304,7 @@ function sanitizeDetail(detail: Record<string, unknown>): Record<string, unknown
   }
 
   if (typeof detail.user_agent === "string" && detail.user_agent.trim().length > 0) {
-    sanitized.user_agent_hash = sha256(detail.user_agent.trim(), salt);
+    sanitized.user_agent_hash = sha256(detail.user_agent.trim(), hashSalt);
     Object.assign(sanitized, inferDeviceInfo(detail.user_agent));
     delete sanitized.user_agent;
     redacted = true;
@@ -240,7 +321,7 @@ function sanitizeDetail(detail: Record<string, unknown>): Record<string, unknown
   }
 
   if (typeof detail.ip_address === "string" && detail.ip_address.trim().length > 0) {
-    sanitized.ip_hash = sha256(detail.ip_address.trim(), salt);
+    sanitized.ip_hash = sha256(detail.ip_address.trim(), ipHashSalt);
     delete sanitized.ip_address;
     redacted = true;
   }
@@ -291,7 +372,10 @@ export async function putDomainEvent(
   const environment = process.env.CHAINY_ENVIRONMENT ?? "unknown";
   const timestamp = new Date();
   const key = buildObjectKey(eventType, code, timestamp);
-  const sanitizedDetail = sanitizeDetail(detail);
+  
+  // Get hash salts from SSM Parameter Store
+  const { hashSalt, ipHashSalt } = await getHashSalts();
+  const sanitizedDetail = sanitizeDetail(detail, hashSalt, ipHashSalt);
 
   const payload = {
     event_type: eventType,
