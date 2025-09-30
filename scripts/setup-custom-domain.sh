@@ -90,7 +90,7 @@ ip_hash_salt_fallback = "0(Hsev@sCf1_98bZRB.lFnz98nGOP2TW"
 # Lambda environment variables (additional)
 lambda_additional_environment = {}
 
-# 網域配置
+# Domain configuration
 web_domain         = "${DOMAIN}"
 web_subdomain      = "${SUBDOMAIN}"
 web_hosted_zone_id = "${HOSTED_ZONE_ID}"

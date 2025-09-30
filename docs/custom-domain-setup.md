@@ -1,100 +1,100 @@
-# Chainy 自訂網域設定指南
+# Chainy Custom Domain Setup Guide
 
-## 🌐 設定 chainy.luichu.dev 網域
+## 🌐 Setting up chainy.luichu.dev Domain
 
-### 步驟 1: 檢查 Route 53 Hosted Zone
+### Step 1: Check Route 53 Hosted Zone
 
-首先檢查您是否已經有 `luichu.dev` 的 Hosted Zone：
+First, check if you already have a Hosted Zone for `luichu.dev`:
 
 ```bash
 aws route53 list-hosted-zones --query "HostedZones[?Name=='luichu.dev.'].{Name:Name,Id:Id}" --output table
 ```
 
-### 步驟 2: 如果沒有 Hosted Zone，需要建立
+### Step 2: Create Hosted Zone if it doesn't exist
 
 ```bash
-# 建立 luichu.dev 的 Hosted Zone
+# Create Hosted Zone for luichu.dev
 aws route53 create-hosted-zone \
   --name luichu.dev \
   --caller-reference $(date +%s) \
   --hosted-zone-config Comment="Hosted zone for luichu.dev"
 ```
 
-### 步驟 3: 獲取 Hosted Zone ID
+### Step 3: Get Hosted Zone ID
 
 ```bash
-# 獲取 Hosted Zone ID
+# Get Hosted Zone ID
 HOSTED_ZONE_ID=$(aws route53 list-hosted-zones --query "HostedZones[?Name=='luichu.dev.'].Id" --output text | sed 's|/hostedzone/||')
 echo "Hosted Zone ID: $HOSTED_ZONE_ID"
 ```
 
-### 步驟 4: 更新 terraform.tfvars
+### Step 4: Update terraform.tfvars
 
-將獲取到的 Hosted Zone ID 更新到 `terraform.tfvars`：
+Update `terraform.tfvars` with the obtained Hosted Zone ID:
 
 ```hcl
 # Optional: Configure front-end hosting (CloudFront + S3)
 web_domain         = "luichu.dev"
 web_subdomain      = "chainy"
-web_hosted_zone_id = "Z1234567890ABCDEFG" # 替換為實際的 Hosted Zone ID
+web_hosted_zone_id = "Z1234567890ABCDEFG" # Replace with actual Hosted Zone ID
 web_price_class    = "PriceClass_100"
 ```
 
-### 步驟 5: 更新 DNS 設定
+### Step 5: Update DNS Settings
 
-如果您使用外部 DNS 提供商（如 Cloudflare、GoDaddy 等），需要：
+If you're using an external DNS provider (like Cloudflare, GoDaddy, etc.), you need to:
 
-1. **獲取 Name Servers**：
+1. **Get Name Servers**:
 ```bash
 aws route53 get-hosted-zone --id $HOSTED_ZONE_ID --query "DelegationSet.NameServers" --output table
 ```
 
-2. **在您的 DNS 提供商中設定**：
-   - 將 `luichu.dev` 的 Name Servers 指向 AWS Route 53 的 Name Servers
-   - 或者建立 CNAME 記錄指向 CloudFront 分發
+2. **Configure in your DNS provider**:
+   - Point `luichu.dev` Name Servers to AWS Route 53 Name Servers
+   - Or create CNAME record pointing to CloudFront distribution
 
-### 步驟 6: 部署基礎設施
+### Step 6: Deploy Infrastructure
 
 ```bash
 terraform plan
 terraform apply
 ```
 
-### 步驟 7: 驗證設定
+### Step 7: Verify Setup
 
-部署完成後，驗證網域設定：
+After deployment, verify domain configuration:
 
 ```bash
-# 檢查 CloudFront 分發
+# Check CloudFront distribution
 terraform output web_cloudfront_domain
 
-# 檢查完整網域
+# Check full domain
 terraform output web_domain
 
-# 測試 DNS 解析
+# Test DNS resolution
 nslookup chainy.luichu.dev
 ```
 
-## 🔧 替代方案：使用現有 DNS 提供商
+## 🔧 Alternative: Using Existing DNS Provider
 
-如果您不想使用 Route 53，可以：
+If you don't want to use Route 53, you can:
 
-### 方案 1: 使用 Cloudflare
+### Option 1: Using Cloudflare
 
-1. 在 Cloudflare 中新增 `luichu.dev` 網域
-2. 建立 CNAME 記錄：
-   - 名稱：`chainy`
-   - 內容：`d1234567890.cloudfront.net`（從 terraform output 獲取）
-   - 代理狀態：已代理（橘色雲朵）
+1. Add `luichu.dev` domain in Cloudflare
+2. Create CNAME record:
+   - Name: `chainy`
+   - Content: `d1234567890.cloudfront.net` (get from terraform output)
+   - Proxy status: Proxied (orange cloud)
 
-### 方案 2: 使用其他 DNS 提供商
+### Option 2: Using Other DNS Providers
 
-1. 建立 CNAME 記錄：
-   - 主機名稱：`chainy.luichu.dev`
-   - 指向：CloudFront 分發網域
-2. 等待 DNS 傳播（通常 5-15 分鐘）
+1. Create CNAME record:
+   - Hostname: `chainy.luichu.dev`
+   - Points to: CloudFront distribution domain
+2. Wait for DNS propagation (usually 5-15 minutes)
 
-## 📋 完整的 terraform.tfvars 範例
+## 📋 Complete terraform.tfvars Example
 
 ```hcl
 # Environment name (dev, staging, prod)
@@ -114,10 +114,10 @@ ip_hash_salt_fallback = "your-fallback-ip-salt"
 # Lambda environment variables (additional)
 lambda_additional_environment = {}
 
-# 網域配置
+# Domain configuration
 web_domain         = "luichu.dev"
 web_subdomain      = "chainy"
-web_hosted_zone_id = "Z1234567890ABCDEFG" # 替換為實際的 Hosted Zone ID
+web_hosted_zone_id = "Z1234567890ABCDEFG" # Replace with actual Hosted Zone ID
 web_price_class    = "PriceClass_100"
 
 # Optional: Additional tags for all resources
@@ -128,47 +128,55 @@ extra_tags = {
 }
 ```
 
-## 🚀 部署後的使用
+## 🚀 Usage After Deployment
 
-部署完成後，您的短連結將使用以下格式：
+After deployment, your short links will use the following format:
 
-- **API 端點**: `https://chainy.luichu.dev/api/`
-- **短連結**: `https://chainy.luichu.dev/abc123`
-- **前端介面**: `https://chainy.luichu.dev/`
+- **API Endpoint**: `https://chainy.luichu.dev/api/`
+- **Short Links**: `https://chainy.luichu.dev/abc123`
+- **Frontend Interface**: `https://chainy.luichu.dev/`
 
-## 🔍 故障排除
+## 🔍 Troubleshooting
 
-### 常見問題
+### Common Issues
 
-1. **DNS 解析失敗**
-   - 檢查 CNAME 記錄是否正確
-   - 等待 DNS 傳播完成
-   - 使用 `dig chainy.luichu.dev` 檢查解析
+1. **DNS Resolution Failed**
+   - Check if CNAME record is correct
+   - Wait for DNS propagation to complete
+   - Use `dig chainy.luichu.dev` to check resolution
 
-2. **SSL 憑證問題**
-   - CloudFront 會自動處理 SSL 憑證
-   - 確保網域已驗證
+2. **SSL Certificate Issues**
+   - CloudFront will automatically handle SSL certificates
+   - Ensure domain is verified
 
-3. **CloudFront 快取問題**
-   - 清除 CloudFront 快取
-   - 檢查 Origin 設定
+3. **CloudFront Cache Issues**
+   - Clear CloudFront cache
+   - Check Origin settings
 
-### 驗證指令
+### Verification Commands
 
 ```bash
-# 檢查 DNS 解析
+# Check DNS resolution
 dig chainy.luichu.dev
 
-# 檢查 SSL 憑證
+# Check SSL certificate
 openssl s_client -connect chainy.luichu.dev:443 -servername chainy.luichu.dev
 
-# 測試 API 端點
+# Test API endpoint
 curl -I https://chainy.luichu.dev/api/health
 ```
 
-## 📞 需要協助？
+## 🔒 Security Best Practices
 
-如果您需要協助設定 DNS 或遇到任何問題，請提供：
-1. 您目前使用的 DNS 提供商
-2. `luichu.dev` 的 DNS 設定
-3. 任何錯誤訊息
+1. **Regular API Key Rotation**
+2. **Monitor Abnormal Access Patterns**
+3. **Use WAF Protection**
+4. **Enable CloudTrail Auditing**
+5. **Regular Dependency Updates**
+
+## 📞 Support
+
+If you need assistance, please provide:
+1. Your current DNS provider
+2. DNS settings for `luichu.dev`
+3. Any error messages

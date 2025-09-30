@@ -1,56 +1,56 @@
-# Chainy 快速部署指南
+# Chainy Quick Deployment Guide
 
-## 🚀 部署步驟
+## 🚀 Deployment Steps
 
-### 1. 設定 SSM 參數
+### 1. Set up SSM Parameters
 
-執行 SSM 參數設定腳本：
+Run the SSM parameter setup script:
 
 ```bash
 ./scripts/setup-ssm-parameters.sh
 ```
 
-這個腳本會：
-- 檢查 AWS CLI 配置
-- 生成安全的雜湊鹽值
-- 在 SSM Parameter Store 中建立參數
-- 提供驗證指令
+This script will:
+- Check AWS CLI configuration
+- Generate secure hash salts
+- Create parameters in SSM Parameter Store
+- Provide verification commands
 
-### 2. 驗證 Terraform 配置
+### 2. Validate Terraform Configuration
 
 ```bash
 terraform validate
 ```
 
-### 3. 初始化 Terraform
+### 3. Initialize Terraform
 
 ```bash
 terraform init -upgrade
 ```
 
-### 4. 檢視部署計劃
+### 4. Review Deployment Plan
 
 ```bash
 terraform plan
 ```
 
-### 5. 部署基礎設施
+### 5. Deploy Infrastructure
 
 ```bash
 terraform apply
 ```
 
-### 6. 獲取 API Key
+### 6. Get API Key
 
-部署完成後，獲取 API Key：
+After deployment, get the API Key:
 
 ```bash
 terraform output -raw api_key_value
 ```
 
-## 🔧 配置說明
+## 🔧 Configuration Description
 
-### terraform.tfvars 範例
+### terraform.tfvars Example
 
 ```hcl
 # Environment name (dev, staging, prod)
@@ -78,68 +78,68 @@ extra_tags = {
 }
 ```
 
-## 🔐 安全功能
+## 🔐 Security Features
 
-### API 認證
-- CRUD 端點需要 API Key 認證
-- 重定向端點保持公開
+### API Authentication
+- CRUD endpoints require API Key authentication
+- Redirect endpoints remain public
 - Rate limiting: 50 requests/second, 100 burst
-- 每日配額: 10,000 requests
+- Daily quota: 10,000 requests
 
-### SSM 參數管理
-- 雜湊鹽值儲存在 SSM Parameter Store
-- 使用 SecureString 類型加密
-- 5分鐘快取機制
-- 失敗時回退到環境變數
+### SSM Parameter Management
+- Hash salts stored in SSM Parameter Store
+- Uses SecureString type encryption
+- 5-minute cache mechanism
+- Fallback to environment variables on failure
 
-## 📊 監控和日誌
+## 📊 Monitoring and Logging
 
-### CloudWatch 日誌
-- Lambda 函數日誌保留 14 天
-- 自動建立日誌群組
-- 結構化日誌輸出
+### CloudWatch Logs
+- Lambda function logs retained for 14 days
+- Automatic log group creation
+- Structured log output
 
-### 建議的監控指標
-- Lambda 錯誤率
-- API Gateway 4XX/5XX 錯誤
-- DynamoDB 讀寫容量
-- S3 事件儲存量
+### Recommended Monitoring Metrics
+- Lambda error rate
+- API Gateway 4XX/5XX errors
+- DynamoDB read/write capacity
+- S3 event storage volume
 
-## 🧪 測試部署
+## 🧪 Testing Deployment
 
-### 1. 測試 API 端點
+### 1. Test API Endpoints
 
 ```bash
-# 獲取 API 端點
+# Get API endpoint
 API_ENDPOINT=$(terraform output -raw api_endpoint)
 API_KEY=$(terraform output -raw api_key_value)
 
-# 測試建立短連結
+# Test creating short link
 curl -X POST "$API_ENDPOINT/links" \
   -H "x-api-key: $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"url": "https://example.com", "code": "test123"}'
 
-# 測試重定向（不需要 API Key）
+# Test redirect (no API Key required)
 curl -I "$API_ENDPOINT/test123"
 ```
 
-### 2. 驗證 SSM 參數
+### 2. Verify SSM Parameters
 
 ```bash
 aws ssm get-parameter --name "/chainy/dev/hash-salt" --with-decryption
 aws ssm get-parameter --name "/chainy/dev/ip-hash-salt" --with-decryption
 ```
 
-## 🔄 更新和維護
+## 🔄 Updates and Maintenance
 
-### 更新雜湊鹽值
+### Update Hash Salts
 
 ```bash
-# 生成新的鹽值
+# Generate new salt
 NEW_SALT=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-32)
 
-# 更新 SSM 參數
+# Update SSM parameter
 aws ssm put-parameter \
   --name "/chainy/dev/hash-salt" \
   --value "$NEW_SALT" \
@@ -147,75 +147,75 @@ aws ssm put-parameter \
   --overwrite
 ```
 
-### 重新部署 Lambda
+### Redeploy Lambda
 
 ```bash
-# 重新建置 Lambda 函數
+# Rebuild Lambda functions
 npm run build
 
-# 重新部署
+# Redeploy
 terraform apply -target=module.lambda
 ```
 
-## 🚨 故障排除
+## 🚨 Troubleshooting
 
-### 常見問題
+### Common Issues
 
-1. **SSM 參數不存在**
-   - 執行 `./scripts/setup-ssm-parameters.sh`
-   - 檢查 IAM 權限
+1. **SSM Parameter Not Found**
+   - Run `./scripts/setup-ssm-parameters.sh`
+   - Check IAM permissions
 
-2. **API Key 認證失敗**
-   - 確認 API Key 正確
-   - 檢查 Usage Plan 配置
+2. **API Key Authentication Failed**
+   - Verify API Key is correct
+   - Check Usage Plan configuration
 
-3. **Lambda 超時**
-   - 檢查 SSM 參數存取
-   - 增加 Lambda 超時時間
+3. **Lambda Timeout**
+   - Check SSM parameter access
+   - Increase Lambda timeout
 
-4. **DynamoDB 錯誤**
-   - 檢查 IAM 權限
-   - 確認表格存在
+4. **DynamoDB Errors**
+   - Check IAM permissions
+   - Verify table exists
 
-### 日誌檢查
+### Log Checking
 
 ```bash
-# Lambda 日誌
+# Lambda logs
 aws logs describe-log-groups --log-group-name-prefix "/aws/lambda/chainy"
 
-# API Gateway 日誌
+# API Gateway logs
 aws logs describe-log-groups --log-group-name-prefix "/aws/apigateway"
 ```
 
-## 📈 效能優化
+## 📈 Performance Optimization
 
-### Lambda 配置
-- 記憶體: 128MB (redirect), 256MB (create)
-- 超時: 3秒 (redirect), 10秒 (create)
-- 並發限制: 預設無限制
+### Lambda Configuration
+- Memory: 128MB (redirect), 256MB (create)
+- Timeout: 3s (redirect), 10s (create)
+- Concurrency limit: Default unlimited
 
-### DynamoDB 配置
-- 按需計費模式
-- 自動擴展
-- 全域二級索引支援
+### DynamoDB Configuration
+- On-demand billing mode
+- Auto-scaling
+- Global secondary index support
 
-### S3 配置
-- 標準儲存類別
-- 30天生命週期過期
-- 伺服器端加密
+### S3 Configuration
+- Standard storage class
+- 30-day lifecycle expiration
+- Server-side encryption
 
-## 🔒 安全最佳實踐
+## 🔒 Security Best Practices
 
-1. **定期輪換 API Key**
-2. **監控異常存取模式**
-3. **使用 WAF 防護**
-4. **啟用 CloudTrail 審計**
-5. **定期更新依賴套件**
+1. **Regular API Key Rotation**
+2. **Monitor Abnormal Access Patterns**
+3. **Use WAF Protection**
+4. **Enable CloudTrail Auditing**
+5. **Regular Dependency Updates**
 
-## 📞 支援
+## 📞 Support
 
-如有問題，請檢查：
-1. Terraform 狀態檔案
-2. CloudWatch 日誌
-3. AWS 服務健康狀態
-4. IAM 權限配置
+If you encounter issues, please check:
+1. Terraform state file
+2. CloudWatch logs
+3. AWS service health status
+4. IAM permission configuration
