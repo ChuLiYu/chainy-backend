@@ -139,6 +139,12 @@ After `terraform apply`, note the `api_endpoint` output (e.g. `https://abc123.ex
 4. **Analytics storage**: S3 objects are partitioned by event type and date/hour (e.g. `link_click/dt=2024-09-30/hour=13/...`).
 5. **Insights**: Use Athena (via an external table over the JSONL keys) or import into QuickSight/ETL jobs for dashboards.
 
+### Event privacy guardrails
+
+- Lambda hashes `owner` and `user_agent` values before persisting, keeping only SHA-256 digests for grouping while hiding raw strings.
+- Wallet addresses are masked (first 4 / last 4 characters) and referer URLs are normalised to origin + path; query strings and other sensitive fragments are removed.
+- A `sensitive_redacted` flag indicates events that had fields sanitised so downstream jobs can branch if needed.
+
 ### Cost snapshot
 
 With fewer than 10k events per month, the direct-to-S3 approach keeps costs to pennies:

@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "crypto";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { buildObjectKey, putDomainEvent } from "../lib/events.ts";
 
@@ -29,7 +30,13 @@ test("putDomainEvent writes JSONL payload to the expected bucket/key", async () 
     {
       eventType: "link_create",
       code: "abc123",
-      detail: { target: "https://example.com" },
+      detail: {
+        target: "https://example.com/docs?token=abc",
+        owner: "alice",
+        wallet_address: "0x1234567890abcdef",
+        user_agent: "Mozilla/5.0",
+        referer: "https://ref.example.com/page?utm=1",
+      },
     },
     fakeClient,
   );
@@ -47,9 +54,18 @@ test("putDomainEvent writes JSONL payload to the expected bucket/key", async () 
   const parsed = JSON.parse(body);
   assert.equal(parsed.event_type, "link_create");
   assert.equal(parsed.code, "abc123");
-  assert.equal(parsed.target, "https://example.com");
+  assert.equal(parsed.target, "https://example.com/docs");
   assert.equal(parsed.environment, "dev");
   assert.ok(parsed.emitted_at, "emitted_at should be present");
+  assert.equal(parsed.wallet_address_masked, "0x12***cdef");
+  assert.equal(parsed.referer_origin, "https://ref.example.com/page");
+  assert.equal(parsed.user_agent_hash, createHash("sha256").update("Mozilla/5.0").digest("hex"));
+  assert.equal(parsed.owner_hash, createHash("sha256").update("alice").digest("hex"));
+  assert.equal(parsed.sensitive_redacted, true);
+  assert.ok(!Object.prototype.hasOwnProperty.call(parsed, "owner"));
+  assert.ok(!Object.prototype.hasOwnProperty.call(parsed, "wallet_address"));
+  assert.ok(!Object.prototype.hasOwnProperty.call(parsed, "user_agent"));
+  assert.ok(!Object.prototype.hasOwnProperty.call(parsed, "referer"));
 
   if (originalBucket === undefined) {
     delete process.env.CHAINY_EVENTS_BUCKET_NAME;

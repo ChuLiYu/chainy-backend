@@ -139,6 +139,12 @@ npm run package        # 將 handlers 打包輸出到 dist/redirect 與 dist/cre
 4. **資料落地**：S3 依 `{event_type}/dt=YYYY-MM-DD/hour=HH/{code}-{ts}.jsonl` 命名，方便之後用 Glue/Athena 對 JSONL 建外部表。
 5. **分析洞察**：直接用 Athena 查詢、導入 Spark/QuickSight，或串接其他 ETL。Lifecycle 會在 `click_events_retention_days`（預設 30 天）後清理舊資料。
 
+### 隱私強化措施
+
+- Lambda 會對 `owner` 與 `user_agent` 做 SHA-256 雜湊，只留摘要供分類分析，不會儲存原始字串。
+- `wallet_address` 只保留前四與最後四碼，中間以 `***` 取代；`referer` 則僅保留來源與路徑，會移除 query string。
+- 每筆資料若有發生遮罩會在 payload 中標記 `sensitive_redacted = true`，方便後續流程判斷。
+
 ### 成本概覽
 
 - **S3 PUT**：$0.005 / 1,000 次，10k 事件約 $0.05。
