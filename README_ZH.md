@@ -6,6 +6,9 @@ Chainy 是一個協助你同時練習 AWS 與 Terraform 的伺服器無後端短
 
 ## 系統架構示意圖
 
+- [Architecture Overview (English)](docs/architecture.md)
+- [中文架構說明](docs/architecture_ZH.md)
+
 ```mermaid
 flowchart LR
   subgraph Client

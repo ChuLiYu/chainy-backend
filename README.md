@@ -6,6 +6,9 @@ Chainy is a learning scaffold for building a serverless short URL platform on AW
 
 ## Architecture Diagram
 
+- [Architecture Overview (English)](docs/architecture.md)
+- [架構說明（中文）](docs/architecture_ZH.md)
+
 ```mermaid
 flowchart LR
   subgraph Client
