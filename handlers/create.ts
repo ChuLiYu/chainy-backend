@@ -18,36 +18,6 @@ const defaultHeaders = {
   "Cache-Control": "no-store",
 };
 
-// Normalise header lookup regardless of casing.
-function headerLookup(event: APIGatewayProxyEventV2, name: string): string | undefined {
-  const headers = event.headers ?? {};
-  return headers[name] ?? headers[name.toLowerCase()];
-}
-
-// Collect request metadata that flows into the events pipeline.
-function extractRequestMetadata(event: APIGatewayProxyEventV2) {
-  const headers = event.headers ?? {};
-  const requestContext = event.requestContext;
-  const http = requestContext.http ?? ({} as typeof requestContext.http);
-
-  const xForwardedFor = headerLookup(event, "x-forwarded-for");
-  const sourceIp = http?.sourceIp ?? xForwardedFor?.split(",")[0]?.trim();
-
-  return {
-    user_agent: headerLookup(event, "user-agent"),
-    referer: headerLookup(event, "referer") ?? headerLookup(event, "referrer"),
-    accept_language: headerLookup(event, "accept-language"),
-    ip_address: sourceIp,
-    geo_country:
-      headerLookup(event, "cloudfront-viewer-country") ?? headerLookup(event, "x-appengine-country"),
-    geo_region:
-      headerLookup(event, "cloudfront-viewer-country-region") ?? headerLookup(event, "x-appengine-region"),
-    geo_city:
-      headerLookup(event, "cloudfront-viewer-city") ?? headerLookup(event, "x-appengine-city"),
-    ip_asn: headerLookup(event, "cloudfront-viewer-asn"),
-  };
-}
-
 // Helper for crafting JSON API responses.
 function jsonResponse(statusCode: number, body: unknown): APIGatewayProxyResultV2 {
   return {
@@ -78,7 +48,6 @@ function generateShortCode(length = 7): string {
   return Array.from(randomBytesBuffer, (byte) => charset[byte % charset.length]).join("");
 }
 
-
 // Ensure a valid URL is provided before writing to DynamoDB.
 function assertTargetUrl(target: unknown): string {
   if (typeof target !== "string" || target.trim().length === 0) {
@@ -86,11 +55,111 @@ function assertTargetUrl(target: unknown): string {
   }
 
   try {
+    // Validate URL format – throws if invalid.
+    // eslint-disable-next-line no-new
     new URL(target);
     return target;
   } catch {
     throw new Error("Target URL is invalid");
   }
+}
+
+// Normalise header lookup regardless of casing.
+function headerLookup(event: APIGatewayProxyEventV2, name: string): string | undefined {
+  const headers = event.headers ?? {};
+  return headers[name] ?? headers[name.toLowerCase()];
+}
+
+const UTM_FIELDS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"] as const;
+
+// Collect request metadata that flows into the events pipeline.
+function extractRequestMetadata(event: APIGatewayProxyEventV2) {
+  const headers = event.headers ?? {};
+  const requestContext = event.requestContext;
+  const http = requestContext.http ?? ({} as typeof requestContext.http);
+  const query = event.queryStringParameters ?? {};
+
+  const xForwardedFor = headerLookup(event, "x-forwarded-for");
+  const sourceIp = http?.sourceIp ?? xForwardedFor?.split(",")[0]?.trim();
+
+  const pull = (...candidates: Array<string | undefined>) =>
+    candidates.find((candidate) => candidate !== undefined && candidate !== null && `${candidate}`.length > 0);
+
+  const walletProvider = pull(
+    headerLookup(event, "x-wallet-provider"),
+    headerLookup(event, "x-wallet"),
+    query.wallet_provider,
+    query.walletProvider,
+  );
+
+  const walletSignature = pull(headerLookup(event, "x-wallet-signature"), query.wallet_signature, query.signature);
+  const walletType = pull(headerLookup(event, "x-wallet-type"), query.wallet_type);
+
+  const chainId = pull(headerLookup(event, "x-chain-id"), headerLookup(event, "x-blockchain-chainid"), query.chain_id, query.chainId, query.network);
+  const dappId = pull(headerLookup(event, "x-dapp-id"), query.dapp_id, query.dappId, query.app_id);
+  const integrationPartner = pull(
+    headerLookup(event, "x-integration-partner"),
+    headerLookup(event, "x-partner-id"),
+    query.integration_partner,
+    query.partner,
+    query.partner_id,
+  );
+  const clientVersion = pull(headerLookup(event, "x-client-version"), headerLookup(event, "x-app-version"), query.client_version, query.app_version);
+  const developerId = pull(headerLookup(event, "x-developer-id"), query.developer_id, query.dev_id);
+  const project = pull(query.project, query.app, query.site, headerLookup(event, "x-project"));
+
+  const utm: Record<string, string | undefined> = {};
+  UTM_FIELDS.forEach((field) => {
+    const camelKey = field.replace(/_(.)/g, (_, c) => c.toUpperCase());
+    const candidate = query[field] ?? (camelKey in query ? query[camelKey] : undefined);
+    if (candidate) {
+      utm[field] = candidate;
+    }
+  });
+
+  const tokenSymbol = pull(query.token_symbol, query.tokenSymbol, query.currency);
+  const tokenAddress = pull(query.token_address, query.tokenAddress, query.contract);
+  const tokenDecimals = pull(query.token_decimals, query.tokenDecimals);
+  const transactionValue = pull(query.transaction_value, query.tx_value, query.value, query.amount);
+  const transactionValueUsd = pull(query.transaction_value_usd, query.tx_value_usd, query.usd_value);
+  const transactionCurrency = pull(query.transaction_currency, query.tx_currency, query.currency);
+  const transactionType = pull(query.transaction_type, query.tx_type, query.action);
+
+  const tags = pull(query.tags, query.interests);
+  const featureFlags = pull(query.feature_flags, query.features);
+
+  return {
+    user_agent: headerLookup(event, "user-agent"),
+    referer: headerLookup(event, "referer") ?? headerLookup(event, "referrer"),
+    accept_language: headerLookup(event, "accept-language"),
+    ip_address: sourceIp,
+    geo_country:
+      headerLookup(event, "cloudfront-viewer-country") ?? headerLookup(event, "x-appengine-country"),
+    geo_region:
+      headerLookup(event, "cloudfront-viewer-country-region") ?? headerLookup(event, "x-appengine-region"),
+    geo_city:
+      headerLookup(event, "cloudfront-viewer-city") ?? headerLookup(event, "x-appengine-city"),
+    ip_asn: headerLookup(event, "cloudfront-viewer-asn"),
+    wallet_provider: walletProvider,
+    wallet_signature: walletSignature,
+    wallet_type: walletType,
+    chain_id: chainId,
+    dapp_id: dappId,
+    integration_partner: integrationPartner,
+    client_version: clientVersion,
+    developer_id: developerId,
+    project,
+    token_symbol: tokenSymbol,
+    token_address: tokenAddress,
+    token_decimals: tokenDecimals,
+    transaction_value: transactionValue,
+    transaction_value_usd: transactionValueUsd,
+    transaction_currency: transactionCurrency,
+    transaction_type: transactionType,
+    tags,
+    feature_flags: featureFlags,
+    ...utm,
+  };
 }
 
 // Entry point: multiplex CRUD operations based on HTTP method.
@@ -159,6 +228,81 @@ async function handleCreate(event: APIGatewayProxyEventV2): Promise<APIGatewayPr
     throw error;
   }
 
+  const requestMeta = extractRequestMetadata(event);
+  const payloadMeta: Record<string, unknown> = {};
+
+  if (typeof payload.wallet_provider === "string") {
+    payloadMeta.wallet_provider = payload.wallet_provider;
+  }
+
+  if (typeof payload.wallet_signature === "string") {
+    payloadMeta.wallet_signature = payload.wallet_signature;
+  }
+
+  if (typeof payload.wallet_type === "string") {
+    payloadMeta.wallet_type = payload.wallet_type;
+  }
+
+  if (typeof payload.chain_id === "string") {
+    payloadMeta.chain_id = payload.chain_id;
+  }
+
+  if (typeof payload.dapp_id === "string") {
+    payloadMeta.dapp_id = payload.dapp_id;
+  }
+
+  if (typeof payload.integration_partner === "string") {
+    payloadMeta.integration_partner = payload.integration_partner;
+  }
+
+  if (typeof payload.client_version === "string") {
+    payloadMeta.client_version = payload.client_version;
+  }
+
+  if (typeof payload.project === "string") {
+    payloadMeta.project = payload.project;
+  }
+
+  if (typeof payload.developer_id === "string") {
+    payloadMeta.developer_id = payload.developer_id;
+  }
+
+  if (typeof payload.token_symbol === "string") {
+    payloadMeta.token_symbol = payload.token_symbol;
+  }
+
+  if (typeof payload.token_address === "string") {
+    payloadMeta.token_address = payload.token_address;
+  }
+
+  if (payload.token_decimals !== undefined) {
+    payloadMeta.token_decimals = payload.token_decimals;
+  }
+
+  if (payload.transaction_value !== undefined) {
+    payloadMeta.transaction_value = payload.transaction_value;
+  }
+
+  if (payload.transaction_value_usd !== undefined) {
+    payloadMeta.transaction_value_usd = payload.transaction_value_usd;
+  }
+
+  if (typeof payload.transaction_currency === "string") {
+    payloadMeta.transaction_currency = payload.transaction_currency;
+  }
+
+  if (typeof payload.transaction_type === "string") {
+    payloadMeta.transaction_type = payload.transaction_type;
+  }
+
+  if (payload.tags !== undefined) {
+    payloadMeta.tags = payload.tags;
+  }
+
+  if (payload.feature_flags !== undefined) {
+    payloadMeta.feature_flags = payload.feature_flags;
+  }
+
   try {
     await putDomainEvent({
       eventType: "link_create",
@@ -168,7 +312,8 @@ async function handleCreate(event: APIGatewayProxyEventV2): Promise<APIGatewayPr
         owner: owner ?? null,
         wallet_address: walletAddress ?? null,
         created_at: timestamp,
-        ...extractRequestMetadata(event),
+        ...requestMeta,
+        ...payloadMeta,
       },
     });
   } catch (error: unknown) {

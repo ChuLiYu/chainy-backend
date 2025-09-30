@@ -141,10 +141,10 @@ After `terraform apply`, note the `api_endpoint` output (e.g. `https://abc123.ex
 
 ### Event privacy guardrails
 
-- Lambda hashes `owner`, `user_agent`, and (if present) IP addresses before persisting, keeping only SHA-256 digests for grouping while hiding raw strings.
+- Lambda hashes `owner`, `user_agent`, and (if present) IP addresses before persisting, keeping only SHA-256 digests for grouping while hiding raw strings. Wallet signatures are never stored—只 flag `wallet_signature_present`.
 - Wallet addresses are masked (first 4 / last 4 characters) and referer/target URLs are normalised to origin + path; query strings and other sensitive fragments are removed.
-- Optional Geo/IP metadata (`geo_country/region/city`, ASN, primary Accept-Language tag) is retained at coarse granularity for analytics, while the original values are scrubbed. Device/browser families are inferred from `user-agent` so segmentation is still possible.
-- A `sensitive_redacted` flag indicates events that had fields sanitised so downstream jobs can branch if needed.
+- Optional Web3/marketing metadata such as `wallet_provider`, `wallet_type`, `chain_id`, `dapp_id`, UTM tags, geo/ASN, Accept-Language, inferred device/browser families, transaction value/currency, token symbol/address, and partner/project identifiers are retained in coarse form for analytics while the original sensitive values are either hashed, masked, or normalised.
+- `tags` / `feature_flags` arrays are trimmed to at most 10 entries for cost control. A `sensitive_redacted` flag indicates events that had fields sanitised so downstream jobs can branch if needed.
 
 ### Cost snapshot
 

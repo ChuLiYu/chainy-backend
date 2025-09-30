@@ -14,9 +14,11 @@ test("buildObjectKey partitions by event type and timestamp", () => {
 test("putDomainEvent writes JSONL payload to the expected bucket/key", async () => {
   const originalBucket = process.env.CHAINY_EVENTS_BUCKET_NAME;
   const originalEnv = process.env.CHAINY_ENVIRONMENT;
+  const originalSalt = process.env.CHAINY_HASH_SALT;
 
   process.env.CHAINY_EVENTS_BUCKET_NAME = "chainy-events-dev";
   process.env.CHAINY_ENVIRONMENT = "dev";
+  delete process.env.CHAINY_HASH_SALT;
 
   const commands: PutObjectCommand[] = [];
   const fakeClient = {
@@ -26,6 +28,9 @@ test("putDomainEvent writes JSONL payload to the expected bucket/key", async () 
     },
   } as const;
 
+  const userAgent =
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
   await putDomainEvent(
     {
       eventType: "link_create",
@@ -34,8 +39,25 @@ test("putDomainEvent writes JSONL payload to the expected bucket/key", async () 
         target: "https://example.com/docs?token=abc",
         owner: "alice",
         wallet_address: "0x1234567890abcdef",
-        user_agent:
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        wallet_signature: "0xsig",
+        wallet_provider: "MetaMask",
+        wallet_type: "extension",
+        chain_id: "0x1",
+        dapp_id: "dapp-xyz",
+        integration_partner: "co-marketing-partner",
+        client_version: "2.3.4",
+        developer_id: "dev-777",
+        project: "ChainyInsights",
+        token_symbol: "usdc",
+        token_address: "0xA0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+        token_decimals: "6",
+        transaction_value: "123.456789",
+        transaction_value_usd: "123.50",
+        transaction_currency: "usdc",
+        transaction_type: "swap",
+        tags: ["defi", "nft"],
+        feature_flags: "beta-users,whale-tier",
+        user_agent: userAgent,
         referer: "https://ref.example.com/page?utm=1",
         ip_address: "203.0.113.9",
         accept_language: "en-CA,en;q=0.9",
@@ -43,6 +65,11 @@ test("putDomainEvent writes JSONL payload to the expected bucket/key", async () 
         geo_region: "QC",
         geo_city: "Montreal",
         ip_asn: "AS12345",
+        utm_source: "Newsletter",
+        utm_medium: "Email",
+        utm_campaign: "Launch",
+        utm_content: "HeroBanner",
+        utm_term: "Keyword",
       },
     },
     fakeClient,
@@ -65,27 +92,49 @@ test("putDomainEvent writes JSONL payload to the expected bucket/key", async () 
   assert.equal(parsed.environment, "dev");
   assert.ok(parsed.emitted_at, "emitted_at should be present");
   assert.equal(parsed.wallet_address_masked, "0x12***cdef");
+  assert.equal(parsed.wallet_provider, "metamask");
+  assert.equal(parsed.wallet_type, "extension");
+  assert.equal(parsed.chain_id, "0x1");
+  assert.equal(parsed.dapp_id, "dapp-xyz");
+  assert.equal(parsed.integration_partner, "co-marketing-partner");
+  assert.equal(parsed.client_version, "2.3.4");
+  assert.equal(parsed.developer_id, "dev-777");
+  assert.equal(parsed.project, "ChainyInsights");
+  assert.equal(parsed.token_symbol, "USDC");
+  assert.equal(parsed.token_address, "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48");
+  assert.equal(parsed.token_decimals, "6");
+  assert.equal(parsed.transaction_value, 123.456789);
+  assert.equal(parsed.transaction_value_usd, 123.5);
+  assert.equal(parsed.transaction_currency, "USDC");
+  assert.equal(parsed.transaction_type, "swap");
+  assert.deepEqual(parsed.tags, ["defi", "nft"]);
+  assert.deepEqual(parsed.feature_flags, ["beta-users", "whale-tier"]);
   assert.equal(parsed.referer_origin, "https://ref.example.com/page");
-  const ua =
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-  assert.equal(parsed.user_agent_hash, createHash("sha256").update(ua).digest("hex"));
+  assert.equal(parsed.user_agent_hash, createHash("sha256").update(userAgent).digest("hex"));
   assert.equal(parsed.owner_hash, createHash("sha256").update("alice").digest("hex"));
-  assert.equal(parsed.sensitive_redacted, true);
-  assert.equal(parsed.target, "https://example.com/docs");
+  assert.equal(parsed.ip_hash, createHash("sha256").update("203.0.113.9").digest("hex"));
   assert.equal(parsed.geo_country, "CA");
   assert.equal(parsed.geo_region, "QC");
   assert.equal(parsed.geo_city, "Montreal");
   assert.equal(parsed.ip_asn, "AS12345");
   assert.equal(parsed.user_language, "en-CA");
-  assert.equal(parsed.ip_hash, createHash("sha256").update("203.0.113.9").digest("hex"));
+  assert.equal(parsed.utm_source, "newsletter");
+  assert.equal(parsed.utm_medium, "email");
+  assert.equal(parsed.utm_campaign, "launch");
+  assert.equal(parsed.utm_content, "herobanner");
+  assert.equal(parsed.utm_term, "keyword");
+  assert.equal(parsed.wallet_signature_present, true);
+  assert.equal(parsed.sensitive_redacted, true);
   assert.ok(parsed.device_type);
   assert.ok(parsed.os_family);
   assert.ok(parsed.browser_family);
   assert.ok(!Object.prototype.hasOwnProperty.call(parsed, "owner"));
   assert.ok(!Object.prototype.hasOwnProperty.call(parsed, "wallet_address"));
+  assert.ok(!Object.prototype.hasOwnProperty.call(parsed, "wallet_signature"));
   assert.ok(!Object.prototype.hasOwnProperty.call(parsed, "user_agent"));
   assert.ok(!Object.prototype.hasOwnProperty.call(parsed, "referer"));
   assert.ok(!Object.prototype.hasOwnProperty.call(parsed, "ip_address"));
+  assert.ok(!Object.prototype.hasOwnProperty.call(parsed, "accept_language"));
 
   if (originalBucket === undefined) {
     delete process.env.CHAINY_EVENTS_BUCKET_NAME;
@@ -97,6 +146,12 @@ test("putDomainEvent writes JSONL payload to the expected bucket/key", async () 
     delete process.env.CHAINY_ENVIRONMENT;
   } else {
     process.env.CHAINY_ENVIRONMENT = originalEnv;
+  }
+
+  if (originalSalt === undefined) {
+    delete process.env.CHAINY_HASH_SALT;
+  } else {
+    process.env.CHAINY_HASH_SALT = originalSalt;
   }
 });
 

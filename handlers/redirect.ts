@@ -30,9 +30,59 @@ function extractRequestMetadata(event: APIGatewayProxyEventV2) {
   const headers = event.headers ?? {};
   const requestContext = event.requestContext;
   const http = requestContext.http ?? ({} as typeof requestContext.http);
+  const query = event.queryStringParameters ?? {};
 
   const xForwardedFor = headerLookup(event, "x-forwarded-for");
   const sourceIp = http?.sourceIp ?? xForwardedFor?.split(",")[0]?.trim();
+
+  const pull = (...candidates: Array<string | undefined>) =>
+    candidates.find((candidate) => candidate !== undefined && candidate !== null && `${candidate}`.length > 0);
+
+  const walletProvider = pull(
+    headerLookup(event, "x-wallet-provider"),
+    headerLookup(event, "x-wallet"),
+    query.wallet_provider,
+    query.walletProvider,
+  );
+
+  const walletSignature = pull(headerLookup(event, "x-wallet-signature"), query.wallet_signature, query.signature);
+
+  const chainId = pull(headerLookup(event, "x-chain-id"), headerLookup(event, "x-blockchain-chainid"), query.chain_id, query.chainId, query.network);
+
+  const dappId = pull(headerLookup(event, "x-dapp-id"), query.dapp_id, query.dappId, query.app_id);
+
+  const integrationPartner = pull(
+    headerLookup(event, "x-integration-partner"),
+    headerLookup(event, "x-partner-id"),
+    query.integration_partner,
+    query.partner,
+    query.partner_id,
+  );
+
+  const clientVersion = pull(headerLookup(event, "x-client-version"), headerLookup(event, "x-app-version"), query.client_version, query.app_version);
+
+  const walletType = pull(headerLookup(event, "x-wallet-type"), query.wallet_type);
+
+  const utm: Record<string, string | undefined> = {};
+  ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"].forEach((field) => {
+    const candidate = query[field] ?? query[field.replace(/_(.)/g, (_, c) => c.toUpperCase())];
+    if (candidate) {
+      utm[field] = candidate;
+    }
+  });
+
+  const tokenSymbol = pull(query.token_symbol, query.tokenSymbol, query.currency);
+  const tokenAddress = pull(query.token_address, query.tokenAddress, query.contract);
+  const tokenDecimals = pull(query.token_decimals, query.tokenDecimals);
+  const transactionValue = pull(query.transaction_value, query.tx_value, query.value, query.amount);
+  const transactionValueUsd = pull(query.transaction_value_usd, query.tx_value_usd, query.usd_value);
+  const transactionCurrency = pull(query.transaction_currency, query.tx_currency, query.currency);
+  const transactionType = pull(query.transaction_type, query.tx_type, query.action);
+
+  const project = pull(query.project, query.app, query.site);
+  const developerId = pull(headerLookup(event, "x-developer-id"), query.developer_id, query.dev_id);
+  const tags = pull(query.tags, query.interests);
+  const featureFlags = pull(query.feature_flags, query.features);
 
   return {
     user_agent: headerLookup(event, "user-agent"),
@@ -46,6 +96,25 @@ function extractRequestMetadata(event: APIGatewayProxyEventV2) {
     geo_city:
       headerLookup(event, "cloudfront-viewer-city") ?? headerLookup(event, "x-appengine-city"),
     ip_asn: headerLookup(event, "cloudfront-viewer-asn"),
+    wallet_provider: walletProvider,
+    wallet_signature: walletSignature,
+    wallet_type: walletType,
+    chain_id: chainId,
+    dapp_id: dappId,
+    integration_partner: integrationPartner,
+    client_version: clientVersion,
+    token_symbol: tokenSymbol,
+    token_address: tokenAddress,
+    token_decimals: tokenDecimals,
+    transaction_value: transactionValue,
+    transaction_value_usd: transactionValueUsd,
+    transaction_currency: transactionCurrency,
+    transaction_type: transactionType,
+    project,
+    developer_id: developerId,
+    tags,
+    feature_flags: featureFlags,
+    ...utm,
   };
 }
 
@@ -98,9 +167,9 @@ export async function handler(
       }),
     );
 
-    // Fire-and-forget write to S3 so redirects stay snappy.
     const requestMeta = extractRequestMetadata(event);
 
+    // Fire-and-forget click analytics; errors are only logged.
     void putDomainEvent({
       eventType: "link_click",
       code,

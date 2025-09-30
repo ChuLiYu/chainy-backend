@@ -2,6 +2,8 @@ import { createHash } from "crypto";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 const s3Client = new S3Client({});
+const UTM_FIELDS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"] as const;
+const MAX_TAGS = 10;
 
 // Resolve events bucket injected through Lambda environment variables.
 function getEventsBucketName(): string {
@@ -96,6 +98,38 @@ function pickPrimaryLanguage(header: string | undefined): string | undefined {
   return lang && lang.length > 0 ? lang : undefined;
 }
 
+function sanitizeStringArray(value: unknown): string[] | undefined {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => (typeof item === "string" ? item.trim() : ""))
+      .filter((item) => item.length > 0)
+      .slice(0, MAX_TAGS);
+  }
+
+  if (typeof value === "string") {
+    return value
+      .split(/[,\s]+/)
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0)
+      .slice(0, MAX_TAGS);
+  }
+
+  return undefined;
+}
+
+function toNumber(value: unknown, precision = 8): number | undefined {
+  if (value === null || value === undefined) {
+    return undefined;
+  }
+
+  const num = Number(value);
+  if (Number.isNaN(num)) {
+    return undefined;
+  }
+
+  return Number(num.toFixed(precision));
+}
+
 // Remove or coarsen sensitive values before persisting the event record.
 function sanitizeDetail(detail: Record<string, unknown>): Record<string, unknown> {
   const sanitized: Record<string, unknown> = { ...detail };
@@ -112,6 +146,80 @@ function sanitizeDetail(detail: Record<string, unknown>): Record<string, unknown
     sanitized.wallet_address_masked = maskWalletAddress(detail.wallet_address);
     delete sanitized.wallet_address;
     redacted = true;
+  }
+
+  if (typeof detail.wallet_signature === "string" && detail.wallet_signature.trim().length > 0) {
+    sanitized.wallet_signature_present = true;
+    delete sanitized.wallet_signature;
+    redacted = true;
+  }
+
+  if (typeof detail.wallet_provider === "string" && detail.wallet_provider.trim().length > 0) {
+    sanitized.wallet_provider = detail.wallet_provider.trim().toLowerCase();
+  }
+
+  if (typeof detail.wallet_type === "string" && detail.wallet_type.trim().length > 0) {
+    sanitized.wallet_type = detail.wallet_type.trim().toLowerCase();
+  }
+
+  if (typeof detail.dapp_id === "string" && detail.dapp_id.trim().length > 0) {
+    sanitized.dapp_id = detail.dapp_id.trim();
+  }
+
+  if (typeof detail.integration_partner === "string" && detail.integration_partner.trim().length > 0) {
+    sanitized.integration_partner = detail.integration_partner.trim();
+  }
+
+  if (typeof detail.client_version === "string" && detail.client_version.trim().length > 0) {
+    sanitized.client_version = detail.client_version.trim();
+  }
+
+  if (typeof detail.project === "string" && detail.project.trim().length > 0) {
+    sanitized.project = detail.project.trim();
+  }
+
+  if (typeof detail.developer_id === "string" && detail.developer_id.trim().length > 0) {
+    sanitized.developer_id = detail.developer_id.trim();
+  }
+
+  if (typeof detail.chain_id === "string" && detail.chain_id.trim().length > 0) {
+    sanitized.chain_id = detail.chain_id.trim();
+  }
+
+  if (typeof detail.token_symbol === "string" && detail.token_symbol.trim().length > 0) {
+    sanitized.token_symbol = detail.token_symbol.trim().toUpperCase();
+  }
+
+  if (typeof detail.token_address === "string" && detail.token_address.trim().length > 0) {
+    sanitized.token_address = detail.token_address.trim().toLowerCase();
+  }
+
+  const txValue = toNumber(detail.transaction_value);
+  if (txValue !== undefined) {
+    sanitized.transaction_value = txValue;
+  }
+
+  const txValueUsd = toNumber(detail.transaction_value_usd);
+  if (txValueUsd !== undefined) {
+    sanitized.transaction_value_usd = txValueUsd;
+  }
+
+  if (typeof detail.transaction_currency === "string" && detail.transaction_currency.trim().length > 0) {
+    sanitized.transaction_currency = detail.transaction_currency.trim().toUpperCase();
+  }
+
+  if (typeof detail.transaction_type === "string" && detail.transaction_type.trim().length > 0) {
+    sanitized.transaction_type = detail.transaction_type.trim().toLowerCase();
+  }
+
+  const tags = sanitizeStringArray(detail.tags);
+  if (tags && tags.length > 0) {
+    sanitized.tags = tags;
+  }
+
+  const featureFlags = sanitizeStringArray(detail.feature_flags ?? detail.features);
+  if (featureFlags && featureFlags.length > 0) {
+    sanitized.feature_flags = featureFlags;
   }
 
   if (typeof detail.user_agent === "string" && detail.user_agent.trim().length > 0) {
@@ -160,6 +268,13 @@ function sanitizeDetail(detail: Record<string, unknown>): Record<string, unknown
   if (typeof detail.ip_asn === "string" && detail.ip_asn.trim().length > 0) {
     sanitized.ip_asn = detail.ip_asn.trim();
   }
+
+  UTM_FIELDS.forEach((field) => {
+    const value = detail[field];
+    if (typeof value === "string" && value.trim().length > 0) {
+      sanitized[field] = value.trim().toLowerCase();
+    }
+  });
 
   if (redacted) {
     sanitized.sensitive_redacted = true;
