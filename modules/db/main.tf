@@ -4,7 +4,7 @@ locals {
 }
 
 # DynamoDB table stores each short code document.
-aws_dynamodb_table "links" {
+resource "aws_dynamodb_table" "links" {
   name         = local.table_name
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "code"
