@@ -32,6 +32,20 @@ package.json, tsconfig.json
 - AWS CLI configured with credentials that can provision the resources
 - Node.js 20+
 
+## Bootstrapping remote state resources (one-time)
+
+Before working with the main Terraform stack, create the remote state bucket and lock table with the helper configuration under `bootstrap/`:
+
+```bash
+cd bootstrap
+terraform init
+terraform apply \
+  -var="state_bucket_name=your-unique-chainy-state-bucket" \
+  -var="lock_table_name=chainy-terraform-locks"
+```
+
+Copy the bucket and table names from the outputs, then update `backend.tf` (or pass `-backend-config` flags) in the root stack to reference them.
+
 ### One-time remote state setup
 
 1. Create an S3 bucket for Terraform state (e.g. `chainy-terraform-state`).

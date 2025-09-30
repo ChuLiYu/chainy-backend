@@ -32,6 +32,20 @@ package.json, tsconfig.json
 - 已設定憑證的 AWS CLI（需有佈署資源的權限）
 - Node.js 20 以上
 
+## （一次性）使用 bootstrap 建立遠端狀態資源
+
+在主專案之前，先到 `bootstrap/` 目錄執行 Terraform，建立 S3 bucket 與 DynamoDB table：
+
+```bash
+cd bootstrap
+terraform init
+terraform apply \
+  -var="state_bucket_name=你專案專用且唯一的 bucket 名稱" \
+  -var="lock_table_name=chainy-terraform-locks"
+```
+
+輸出會顯示 bucket 與 table 名稱，把這些值寫回根目錄的 `backend.tf`（或在 `terraform init` 時用 `-backend-config` 指定）。
+
 ### 遠端狀態初始化（一次性）
 
 1. 建立專用的 S3 Bucket（例如 `chainy-terraform-state`）。
