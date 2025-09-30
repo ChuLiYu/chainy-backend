@@ -53,6 +53,7 @@ scripts/                # esbuild bundling script for Lambda packages
 dist/                   # Generated Lambda bundles (created by `npm run package`)
 README.md               # English documentation
 README_ZH.md            # Traditional Chinese documentation
+web/                    # Minimal static web client for generating short links
 variables.tf            # Root input variables
 outputs.tf              # Root outputs
 package.json, tsconfig.json
@@ -112,6 +113,17 @@ lambda_additional_environment = {
 - `environment` 控制資源命名、tag 與輸出；`region` 預設為 `ap-northeast-1`，可依需求調整。
 - `lambda_additional_environment` 會傳入兩個 Lambda，這些環境變數用於雜湊 owner/user-agent/IP。建議使用 `openssl rand -hex 32` 產生隨機鹽值，並依環境（dev/staging/prod）分開設定。
 - 若不想寫在檔案，可在 CLI 執行時帶 `-var` 或以 CI/CD Secrets 注入。
+
+## Minimal Web Client
+
+The `/web` directory contains a lightweight static page (HTML/CSS/JS) for creating short links without leaving the browser. To preview locally:
+
+```bash
+cd web
+python -m http.server 4173
+```
+
+Open `http://localhost:4173`, fill in the API endpoint (e.g. `https://xxxx.execute-api.ap-northeast-1.amazonaws.com`) and create short links instantly. For deployment you can `aws s3 sync web/ s3://<your-web-bucket> --delete` and invalidate CloudFront, or plug the build into the CI/CD workflow.
 
 ## Deploying with Terraform
 

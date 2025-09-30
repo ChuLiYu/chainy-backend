@@ -41,7 +41,7 @@ module "lambda" {
   redirect_source_dir = local.redirect_source_dir
   create_source_dir   = local.create_source_dir
 
-  log_retention_in_days = var.log_retention_in_days
+  log_retention_in_days  = var.log_retention_in_days
   additional_environment = var.lambda_additional_environment
 }
 
@@ -56,4 +56,20 @@ module "api" {
   redirect_lambda_name = module.lambda.redirect_lambda_name
   create_lambda_arn    = module.lambda.create_lambda_arn
   create_lambda_name   = module.lambda.create_lambda_name
+}
+
+module "web" {
+  count  = var.web_domain == null ? 0 : 1
+  source = "./modules/web"
+  providers = {
+    aws.us_east_1 = aws.us_east_1
+  }
+
+  project        = var.project
+  environment    = var.environment
+  tags           = local.tags
+  domain         = var.web_domain
+  subdomain      = var.web_subdomain
+  hosted_zone_id = var.web_hosted_zone_id
+  price_class    = var.web_price_class
 }

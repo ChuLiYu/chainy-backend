@@ -11,6 +11,12 @@ lambda_additional_environment = {
   CHAINY_IP_HASH_SALT = "replace-with-random-ip-salt"
 }
 
+# Optional: Configure front-end hosting (CloudFront + S3). Leave commented to skip.
+# web_domain         = "example.com"
+# web_subdomain      = "chainy"
+# web_hosted_zone_id = "Z1234567890ABCDEFG" # Route 53 hosted zone ID for the domain
+# web_price_class    = "PriceClass_100"
+
 # Optional: Override build directories
 # redirect_build_dir = "dist/redirect"
 # create_build_dir  = "dist/create"

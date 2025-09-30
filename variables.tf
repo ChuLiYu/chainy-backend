@@ -55,3 +55,32 @@ variable "lambda_additional_environment" {
   type        = map(string)
   default     = {}
 }
+
+variable "web_domain" {
+  description = "(Optional) Root domain (e.g. example.com) used for hosting the Chainy web front-end. Leave null to skip front-end infrastructure."
+  type        = string
+  default     = null
+}
+
+variable "web_subdomain" {
+  description = "Subdomain used for the front-end distribution (e.g. chainy -> chainy.example.com)."
+  type        = string
+  default     = "chainy"
+}
+
+variable "web_hosted_zone_id" {
+  description = "Route 53 hosted zone ID for the provided web domain. Required when web_domain is set."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.web_domain == null ? var.web_hosted_zone_id == null : var.web_hosted_zone_id != null
+    error_message = "web_hosted_zone_id must be provided when web_domain is set."
+  }
+}
+
+variable "web_price_class" {
+  description = "CloudFront price class for the front-end distribution."
+  type        = string
+  default     = "PriceClass_100"
+}

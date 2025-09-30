@@ -66,6 +66,7 @@ scripts/                # esbuild 打包腳本
 dist/                   # `npm run package` 產出的 Lambda Bundle
 README.md               # 英文說明文件
 README_ZH.md            # 本文件
+web/                    # 提供建立短網址的極簡前端
 variables.tf            # Root module 需要的輸入變數
 outputs.tf              # Terraform 輸出的重點資訊
 package.json, tsconfig.json
@@ -125,6 +126,17 @@ lambda_additional_environment = {
 - `environment` 會影響資源命名與輸出；`region` 預設 `ap-northeast-1`，可依專案需求調整。
 - `lambda_additional_environment` 會注入 Lambda 用於雜湊/遮罩（owner、user-agent、IP 等）。建議使用 `openssl rand -hex 32` 產生獨特鹽值，並依不同環境分別設定。
 - 若不想留在檔案，可改用 `terraform apply -var="..."`、環境變數或 CI/CD Secret 注入。
+
+## 極簡前端介面
+
+`/web` 目錄內提供純 HTML/CSS/JS 版的短網址產生器，可離線預覽：
+
+```bash
+cd web
+python -m http.server 4173
+```
+
+開啟 `http://localhost:4173` → 填入 API Endpoint（例如 `https://xxxx.execute-api.ap-northeast-1.amazonaws.com`）即可建立短連結。佈署時可直接 `aws s3 sync web/ s3://<你的-web-bucket> --delete` 並做 CloudFront Invalidation，或掛進 GitHub Actions。
 
 ## 使用 Terraform 佈署
 
