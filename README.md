@@ -1,6 +1,8 @@
-# Chainy – AWS/Terraform URL Shortener Scaffold
+# Chainy Backend – AWS/Terraform URL Shortener Scaffold
 
-Chainy is a learning scaffold for building a serverless short URL platform on AWS with Terraform. It wires together an HTTP API, Lambda functions, DynamoDB storage, and a lightweight event pipeline where Lambda writes JSONL records straight to S3 so you can focus on iterating and deepening your AWS + Terraform skills.
+Chainy Backend is a learning scaffold for building a serverless short URL platform on AWS with Terraform.
+
+> 💡 Looking for the frontend application? Check out [chainy-web](https://github.com/yourusername/chainy-web). It wires together an HTTP API, Lambda functions, DynamoDB storage, and a lightweight event pipeline where Lambda writes JSONL records straight to S3 so you can focus on iterating and deepening your AWS + Terraform skills.
 
 > 🇹🇼 Looking for the Traditional Chinese guide? See [README_ZH.md](README_ZH.md).
 
