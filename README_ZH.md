@@ -197,6 +197,11 @@ npm run package        # 將 handlers 打包輸出到 dist/redirect 與 dist/cre
 - **S3 儲存**：每筆 JSONL 幾 KB，以 30 天保留估計每月僅需幾毛錢。
 - **Lambda**：執行時間極短，在預期流量下幾乎不可見。
 
+## CI/CD
+
+- GitHub Actions 工作流程檔案：[`.github/workflows/ci.yml`](.github/workflows/ci.yml)，會自動執行 `npm install`、`npm run typecheck`、`npm run test`，以及 Terraform `fmt`／`validate`（root 與 bootstrap，皆採 `-backend=false`）。
+- 若要在雲端自動化佈署 plan/apply，建議設定 GitHub OIDC 與對應的 AWS IAM Role，並於 Repo Secrets 配置必要的憑證。
+
 ## 清除資源
 
 若要移除整個環境：

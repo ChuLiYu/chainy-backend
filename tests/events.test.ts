@@ -175,3 +175,57 @@ test("putDomainEvent throws if events bucket env var missing", async () => {
     process.env.CHAINY_EVENTS_BUCKET_NAME = originalBucket;
   }
 });
+
+test("putDomainEvent normalises string tag inputs", async () => {
+  const originalBucket = process.env.CHAINY_EVENTS_BUCKET_NAME;
+  const originalEnv = process.env.CHAINY_ENVIRONMENT;
+
+  process.env.CHAINY_EVENTS_BUCKET_NAME = "chainy-events-dev";
+  process.env.CHAINY_ENVIRONMENT = "dev";
+
+  const commands: PutObjectCommand[] = [];
+  const fakeClient = {
+    send: async (command: PutObjectCommand) => {
+      commands.push(command);
+      return {};
+    },
+  } as const;
+
+  await putDomainEvent(
+    {
+      eventType: "link_click",
+      code: "extra",
+      detail: {
+        target: "https://example.com",
+        tags: "defi, nft,dao,airdrop, staking, gamefi, infra,dao-tools,analytics, otc,trading,bridge",
+        feature_flags: "beta-users whales pro enterprise",
+      },
+    },
+    fakeClient,
+  );
+
+  const body = commands[0].input.Body?.toString() ?? "";
+  const parsed = JSON.parse(body);
+  const tags = parsed.tags as string[];
+  const featureFlags = parsed.feature_flags as string[];
+
+  assert.ok(Array.isArray(tags));
+  assert.equal(tags.length, 10, "tags array should be trimmed to 10 entries");
+  assert.deepEqual(tags.slice(0, 3), ["defi", "nft", "dao"]);
+  assert.equal(tags[tags.length - 1], "otc");
+  assert.ok(Array.isArray(featureFlags));
+  assert.deepEqual(featureFlags, ["beta-users", "whales", "pro", "enterprise"]);
+  assert.ok(!Object.prototype.hasOwnProperty.call(parsed, "sensitive_redacted"));
+
+  if (originalBucket === undefined) {
+    delete process.env.CHAINY_EVENTS_BUCKET_NAME;
+  } else {
+    process.env.CHAINY_EVENTS_BUCKET_NAME = originalBucket;
+  }
+
+  if (originalEnv === undefined) {
+    delete process.env.CHAINY_ENVIRONMENT;
+  } else {
+    process.env.CHAINY_ENVIRONMENT = originalEnv;
+  }
+});

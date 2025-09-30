@@ -199,6 +199,11 @@ With fewer than 10k events per month, the direct-to-S3 approach keeps costs to p
 - **S3 storage**: JSONL events (a few KB each) stay under a few cents per month; lifecycle expires or transitions them after `click_events_retention_days` (default 30 days).
 - **Lambda**: Millisecond execution time leads to <$0.01/month at the stated volume.
 
+## CI/CD
+
+- Automated checks run through [`.github/workflows/ci.yml`](.github/workflows/ci.yml): Node.js dependencies (`npm install`), `npm run typecheck`, `npm run test`, and Terraform `fmt` / `validate` (root + bootstrap, with backends disabled).
+- To enable plan/apply from GitHub Actions, configure OIDC access for Terraform (see docs/architecture.md for recommended next steps) and supply cloud credentials via repo secrets.
+
 ## Cleaning up
 
 When you want to tear down the scaffold, run:
