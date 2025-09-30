@@ -2,7 +2,7 @@
 
 Chainy Backend is a learning scaffold for building a serverless short URL platform on AWS with Terraform.
 
-> 💡 Looking for the frontend application? Check out [chainy-web](https://github.com/yourusername/chainy-web). It wires together an HTTP API, Lambda functions, DynamoDB storage, and a lightweight event pipeline where Lambda writes JSONL records straight to S3 so you can focus on iterating and deepening your AWS + Terraform skills.
+> 💡 Looking for the frontend application? Check out [chainy-web](https://github.com/ChuLiYu/chainy-web). It wires together an HTTP API, Lambda functions, DynamoDB storage, and a lightweight event pipeline where Lambda writes JSONL records straight to S3 so you can focus on iterating and deepening your AWS + Terraform skills.
 
 > 🇹🇼 Looking for the Traditional Chinese guide? See [README_ZH.md](README_ZH.md).
 
@@ -206,7 +206,7 @@ With fewer than 10k events per month, the direct-to-S3 approach keeps costs to p
 
 ## CI/CD
 
-- Automated checks run through [`.github/workflows/ci.yml`](.github/workflows/ci.yml): Node.js dependencies (`npm install`), `npm run typecheck`, `npm run test`, and Terraform `fmt` / `validate` (root + bootstrap, with backends disabled).
+- Automated checks run through `.github/workflows/ci.yml` (TODO: Add CI/CD workflow file): Node.js dependencies (`npm install`), `npm run typecheck`, `npm run test`, and Terraform `fmt` / `validate` (root + bootstrap, with backends disabled).
 - To enable plan/apply from GitHub Actions, configure OIDC access for Terraform (see docs/architecture.md for recommended next steps) and supply cloud credentials via repo secrets.
 
 ## Cleaning up

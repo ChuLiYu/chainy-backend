@@ -1,0 +1,23 @@
+# Environment name (dev, staging, prod)
+environment = "dev"
+
+# AWS region for resources
+region = "ap-northeast-1"
+
+# Lambda environment variables
+lambda_additional_environment = {
+  # Use 'openssl rand -hex 32' to generate these salts
+  CHAINY_HASH_SALT    = "replace-with-random-salt"
+  CHAINY_IP_HASH_SALT = "replace-with-random-ip-salt"
+}
+
+# Optional: Override build directories
+# redirect_build_dir = "dist/redirect"
+# create_build_dir  = "dist/create"
+
+# Optional: Additional tags for all resources
+extra_tags = {
+  Project     = "chainy"
+  Environment = "dev"
+  ManagedBy   = "terraform"
+}
