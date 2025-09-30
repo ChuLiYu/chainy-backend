@@ -31,15 +31,28 @@ locals {
   }
 
   base_environment = merge({
-    CHAINY_ENVIRONMENT        = var.environment,
-    CHAINY_TABLE_NAME         = var.table_name,
-    CHAINY_EVENTS_BUCKET_NAME = var.events_bucket_name
+    CHAINY_ENVIRONMENT           = var.environment,
+    CHAINY_TABLE_NAME            = var.table_name,
+    CHAINY_EVENTS_BUCKET_NAME    = var.events_bucket_name,
+    CHAINY_HASH_SALT_PARAM       = var.hash_salt_parameter_name,
+    CHAINY_IP_HASH_SALT_PARAM    = var.ip_hash_salt_parameter_name,
+    CHAINY_HASH_SALT             = var.hash_salt_fallback,
+    CHAINY_IP_HASH_SALT          = var.ip_hash_salt_fallback
   }, var.additional_environment)
 
   source_dirs = {
     redirect = var.redirect_source_dir
     create   = var.create_source_dir
   }
+}
+
+data "aws_region" "current" {}
+
+data "aws_caller_identity" "current" {}
+
+locals {
+  hash_salt_parameter_arn = format("arn:aws:ssm:%s:%s:parameter%s", data.aws_region.current.name, data.aws_caller_identity.current.account_id, var.hash_salt_parameter_name)
+  ip_salt_parameter_arn   = format("arn:aws:ssm:%s:%s:parameter%s", data.aws_region.current.name, data.aws_caller_identity.current.account_id, var.ip_hash_salt_parameter_name)
 }
 
 # Zip the pre-built handler directories for upload.
@@ -92,6 +105,17 @@ resource "aws_iam_role_policy" "lambda" {
         Effect = "Allow"
         Action = ["s3:PutObject"]
         Resource = "arn:aws:s3:::${var.events_bucket_name}/*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:GetParameter",
+          "ssm:GetParameters"
+        ]
+        Resource = [
+          local.hash_salt_parameter_arn,
+          local.ip_salt_parameter_arn
+        ]
       },
       {
         Effect = "Allow"

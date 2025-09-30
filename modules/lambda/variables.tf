@@ -75,3 +75,25 @@ variable "additional_environment" {
   type        = map(string)
   default     = {}
 }
+
+variable "hash_salt_parameter_name" {
+  description = "SSM parameter name storing the hash salt (used for IAM permissions)."
+  type        = string
+}
+
+variable "ip_hash_salt_parameter_name" {
+  description = "SSM parameter name storing the IP hash salt (used for IAM permissions)."
+  type        = string
+}
+
+variable "hash_salt_fallback" {
+  description = "Fallback hash salt value if SSM parameter retrieval fails."
+  type        = string
+  default     = ""
+}
+
+variable "ip_hash_salt_fallback" {
+  description = "Fallback IP hash salt value if SSM parameter retrieval fails."
+  type        = string
+  default     = ""
+}
