@@ -34,3 +34,21 @@ variable "create_lambda_name" {
   description = "Name of the Lambda function managing short link CRUD."
   type        = string
 }
+
+variable "authorizer_lambda_arn" {
+  description = "ARN of the Lambda authorizer function (optional)."
+  type        = string
+  default     = ""
+}
+
+variable "authorizer_lambda_name" {
+  description = "Name of the Lambda authorizer function (optional)."
+  type        = string
+  default     = ""
+}
+
+variable "enable_authentication" {
+  description = "Enable JWT authentication for API routes."
+  type        = bool
+  default     = false
+}

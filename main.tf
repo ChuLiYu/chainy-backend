@@ -34,6 +34,37 @@ module "events" {
   retention_days = var.click_events_retention_days
 }
 
+# Security module: SSM parameters, WAF, and security configurations.
+module "security" {
+  source      = "./modules/security"
+  project     = var.project
+  environment = var.environment
+  tags        = local.tags
+
+  jwt_secret          = var.jwt_secret
+  rate_limit_per_5min = var.waf_rate_limit_per_5min
+  blocked_countries   = var.waf_blocked_countries
+  log_retention_days  = var.log_retention_in_days
+
+  # API Gateway ARN will be set after API module is created
+  api_gateway_arn = var.enable_waf ? module.api.api_arn : ""
+}
+
+# Lambda Authorizer for JWT authentication (optional).
+module "authorizer" {
+  count  = var.enable_authentication ? 1 : 0
+  source = "./modules/authorizer"
+
+  project     = var.project
+  environment = var.environment
+  tags        = local.tags
+
+  lambda_zip_path           = "${path.module}/modules/authorizer/build/authorizer.zip"
+  jwt_secret_parameter_name = module.security.jwt_secret_parameter_name
+  jwt_secret_parameter_arn  = module.security.jwt_secret_parameter_arn
+  log_retention_days        = var.log_retention_in_days
+}
+
 # Lambda functions for redirecting and managing links, plus IAM roles.
 module "lambda" {
   source      = "./modules/lambda"
@@ -70,6 +101,11 @@ module "api" {
   redirect_lambda_name = module.lambda.redirect_lambda_name
   create_lambda_arn    = module.lambda.create_lambda_arn
   create_lambda_name   = module.lambda.create_lambda_name
+
+  # Authentication configuration
+  enable_authentication  = var.enable_authentication
+  authorizer_lambda_arn  = var.enable_authentication && length(module.authorizer) > 0 ? module.authorizer[0].invoke_arn : ""
+  authorizer_lambda_name = var.enable_authentication && length(module.authorizer) > 0 ? module.authorizer[0].function_name : ""
 }
 
 module "web" {
@@ -89,4 +125,21 @@ module "web" {
 
   # Pass API Gateway domain for short link routing
   api_domain_name = trimprefix(module.api.api_endpoint, "https://")
+}
+
+# Budget monitoring and cost control (optional).
+module "budget" {
+  count  = var.enable_budget_monitoring ? 1 : 0
+  source = "./modules/budget"
+
+  project     = var.project
+  environment = var.environment
+  tags        = local.tags
+
+  monthly_budget_limit    = var.monthly_budget_limit
+  daily_cost_threshold    = var.daily_cost_threshold
+  alert_emails            = var.budget_alert_emails
+  primary_alert_email     = length(var.budget_alert_emails) > 0 ? var.budget_alert_emails[0] : ""
+  enable_sns_alerts       = length(var.budget_alert_emails) > 0
+  enable_daily_cost_alarm = length(var.budget_alert_emails) > 0
 }

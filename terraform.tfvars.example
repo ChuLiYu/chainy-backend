@@ -31,3 +31,45 @@ extra_tags = {
   Environment = "dev"
   ManagedBy   = "terraform"
 }
+
+# ============================================================================
+# Security Configuration (Optional)
+# ============================================================================
+
+# Enable JWT authentication for API endpoints
+# Set to true to require authentication for creating/updating/deleting links
+# enable_authentication = true
+
+# JWT secret for signing tokens (leave empty to auto-generate)
+# In production, use a strong random secret
+# jwt_secret = "your-super-secret-key-here"
+
+# Enable AWS WAF for API Gateway protection
+# Provides rate limiting, SQL injection protection, and more
+# enable_waf = true
+
+# WAF rate limiting: maximum requests per IP per 5 minutes
+# waf_rate_limit_per_5min = 2000
+
+# Block specific countries (ISO 3166-1 alpha-2 codes)
+# Example: ["CN", "RU"] to block China and Russia
+# waf_blocked_countries = []
+
+# ============================================================================
+# Budget and Cost Control (Optional but Recommended)
+# ============================================================================
+
+# Enable AWS Budgets monitoring
+# First 2 budgets are FREE!
+# enable_budget_monitoring = true
+
+# Set your monthly budget limit (receives alerts at 80% and 100%)
+# monthly_budget_limit = 20  # $20/month
+
+# Daily cost threshold for CloudWatch alarms
+# daily_cost_threshold = 2   # $2/day
+
+# Email addresses for budget alerts
+# budget_alert_emails = ["your-email@example.com"]
+
+# 💡 Tip: Start with a conservative budget, you can always increase it later!

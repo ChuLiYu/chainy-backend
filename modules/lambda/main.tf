@@ -35,13 +35,13 @@ locals {
   }
 
   base_environment = merge({
-    CHAINY_ENVIRONMENT           = var.environment,
-    CHAINY_TABLE_NAME            = var.table_name,
-    CHAINY_EVENTS_BUCKET_NAME    = var.events_bucket_name,
-    CHAINY_HASH_SALT_PARAM       = var.hash_salt_parameter_name,
-    CHAINY_IP_HASH_SALT_PARAM    = var.ip_hash_salt_parameter_name,
-    CHAINY_HASH_SALT             = var.hash_salt_fallback,
-    CHAINY_IP_HASH_SALT          = var.ip_hash_salt_fallback
+    CHAINY_ENVIRONMENT        = var.environment,
+    CHAINY_TABLE_NAME         = var.table_name,
+    CHAINY_EVENTS_BUCKET_NAME = var.events_bucket_name,
+    CHAINY_HASH_SALT_PARAM    = var.hash_salt_parameter_name,
+    CHAINY_IP_HASH_SALT_PARAM = var.ip_hash_salt_parameter_name,
+    CHAINY_HASH_SALT          = var.hash_salt_fallback,
+    CHAINY_IP_HASH_SALT       = var.ip_hash_salt_fallback
   }, local.short_link_environment, var.additional_environment)
 
   source_dirs = {
@@ -101,13 +101,13 @@ resource "aws_iam_role_policy" "lambda" {
     Version = "2012-10-17"
     Statement = [
       {
-        Effect = "Allow"
-        Action = local.dynamodb_actions[each.key]
+        Effect   = "Allow"
+        Action   = local.dynamodb_actions[each.key]
         Resource = var.table_arn
       },
       {
-        Effect = "Allow"
-        Action = ["s3:PutObject"]
+        Effect   = "Allow"
+        Action   = ["s3:PutObject"]
         Resource = "arn:aws:s3:::${var.events_bucket_name}/*"
       },
       {

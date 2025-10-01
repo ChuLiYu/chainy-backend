@@ -18,6 +18,10 @@ const handlers = [
     name: "create",
     entryPoint: path.join(projectRoot, "handlers", "create.ts"),
   },
+  {
+    name: "authorizer",
+    entryPoint: path.join(projectRoot, "handlers", "authorizer.ts"),
+  },
 ];
 
 async function run() {
