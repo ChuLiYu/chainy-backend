@@ -117,15 +117,13 @@ npm run package        # 將 handlers 打包輸出到 dist/redirect 與 dist/cre
 environment = "dev"
 region      = "ap-northeast-1"
 
-lambda_additional_environment = {
-  CHAINY_HASH_SALT    = "請改成隨機鹽值"
-  CHAINY_IP_HASH_SALT = "請改成隨機鹽值"
-}
+# Lambda 額外環境變數（選填）
+lambda_additional_environment = {}
 ```
 
 - `environment` 會影響資源命名與輸出；`region` 預設 `ap-northeast-1`，可依專案需求調整。
-- `lambda_additional_environment` 會注入 Lambda 用於雜湊/遮罩（owner、user-agent、IP 等）。建議使用 `openssl rand -hex 32` 產生獨特鹽值，並依不同環境分別設定。
-- 若不想留在檔案，可改用 `terraform apply -var="..."`、環境變數或 CI/CD Secret 注入。
+- `lambda_additional_environment` 仍可用於自訂 env；雜湊鹽值改由 AWS Systems Manager Parameter Store 讀取，預設路徑為 `/chainy/<environment>/CHAINY_HASH_SALT` 與 `/chainy/<environment>/CHAINY_IP_HASH_SALT`，可透過 `hash_salt_parameter_name` / `ip_hash_salt_parameter_name` 覆寫。
+- 建議使用 `aws ssm put-parameter --type SecureString --value "$(openssl rand -hex 32)"` 建立鹽值，並確認 Lambda IAM Role 擁有 `ssm:GetParameter` 權限。
 
 ## 極簡前端介面
 
