@@ -46,7 +46,7 @@ monthly_budget_limit = 10
 daily_cost_threshold = 1
 
 # ⚠️ 重要：替換為您的郵箱
-budget_alert_emails = ["your-email@example.com"]
+budget_alert_emails = ["liyu.chu.work@gmail.com"]
 
 # ============================================================================
 # CloudWatch 日誌優化（最小成本）
