@@ -53,3 +53,8 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "api_domain_name" {
+  description = "API Gateway domain name for short link redirects (without https://)."
+  type        = string
+}

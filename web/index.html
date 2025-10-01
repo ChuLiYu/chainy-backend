@@ -1,54 +1,96 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Chainy Short Links</title>
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <main class="page">
-      <section class="hero">
-        <h1>Chainy Link Forge</h1>
-        <p class="tagline">
-          Spin up crypto-friendly short URLs and keep analytics flowing to S3.
-        </p>
-      </section>
+<html lang="zh-TW">
 
-      <section class="card">
-        <h2>Shorten URL</h2>
-        <p class="card-subtitle">Drop in your target link and we’ll mint a crypto-friendly short URL.</p>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chainy 短網址生成器</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
 
-        <form id="link-form">
-          <label class="field">
-            <span>Target URL</span>
-            <input
-              id="target"
-              type="url"
-              placeholder="https://luichu.dev/"
-              required
-            />
-          </label>
+<body>
+  <!-- 科技背景動畫 -->
+  <div class="tech-background">
+    <div class="grid-overlay"></div>
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+    <div class="glow-orb orb-3"></div>
+  </div>
 
-          <button type="submit">Generate Short Link</button>
-        </form>
+  <main class="page">
+    <section class="hero">
+      <div class="logo-container">
+        <div class="logo-hex">
+          <svg viewBox="0 0 100 100" class="hex-icon">
+            <polygon points="50,5 90,27 90,73 50,95 10,73 10,27" class="hex-shape" />
+            <text x="50" y="60" class="hex-text">C</text>
+          </svg>
+        </div>
+      </div>
+      <h1 class="tech-title">
+        <span class="title-main">CHAINY</span>
+        <span class="title-sub">短網址生成器</span>
+      </h1>
+      <p class="tagline">
+        <span class="highlight-text">加密友善</span> · 智能分析 ·
+        <span class="highlight-text">閃電快速</span>
+      </p>
+    </section>
 
-        <div id="result" class="result hidden"></div>
+    <section class="card">
+      <div class="card-header">
+        <div class="status-indicator">
+          <span class="pulse-dot"></span>
+          <span class="status-text">系統運行中</span>
+        </div>
+      </div>
 
-        <p class="card-note">
-          API endpoint
-          <span id="apiDisplay"></span>
-          <button id="changeApi" type="button" class="link-button">Change</button>
-        </p>
-      </section>
+      <form id="link-form">
+        <label class="field">
+          <span class="field-label">
+            <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+            目標網址
+          </span>
+          <div class="input-wrapper">
+            <input id="target" type="url" placeholder="https://your-website.com" required />
+            <div class="input-glow"></div>
+          </div>
+        </label>
 
-      <footer class="footer">
-        <p>
-          Built with <span class="glow">Chainy</span> · Lambda → DynamoDB → S3 events
-        </p>
-      </footer>
-    </main>
+        <button type="submit" class="submit-btn">
+          <span class="btn-bg"></span>
+          <span class="btn-content">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <span class="btn-text">生成短網址</span>
+            <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </span>
+        </button>
+      </form>
 
-    <script src="script.js" type="module"></script>
-  </body>
+      <div id="result" class="result hidden"></div>
+    </section>
+
+    <footer class="footer">
+      <div class="footer-line"></div>
+      <p>
+        <span class="footer-icon">⚡</span>
+        Built with <span class="glow">Chainy</span>
+        <span class="footer-divider">|</span>
+        Lambda → DynamoDB → S3
+      </p>
+    </footer>
+  </main>
+
+  <script src="script.js" type="module"></script>
+</body>
+
 </html>

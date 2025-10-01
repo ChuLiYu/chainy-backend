@@ -86,4 +86,7 @@ module "web" {
   subdomain      = var.web_subdomain
   hosted_zone_id = var.web_hosted_zone_id
   price_class    = var.web_price_class
+  
+  # Pass API Gateway domain for short link routing
+  api_domain_name = trimprefix(module.api.api_endpoint, "https://")
 }

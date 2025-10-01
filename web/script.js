@@ -69,22 +69,22 @@ const hideResult = () => {
 const showResult = ({ shortUrl, payload }) => {
   resultEl.innerHTML = `
     <div>
-      <strong>Short Link</strong>
+      <strong>短網址</strong>
       <p><a href="${shortUrl}" target="_blank" rel="noopener">${shortUrl}</a></p>
     </div>
     <div>
-      <strong>Target</strong>
+      <strong>目標網址</strong>
       <p>${payload.target}</p>
     </div>
-    <button id="copyBtn" type="button">Copy URL</button>
+    <button id="copyBtn" type="button">複製網址</button>
   `;
   resultEl.classList.remove("hidden");
 
   const copyBtn = document.getElementById("copyBtn");
   copyBtn.addEventListener("click", () => {
     navigator.clipboard.writeText(shortUrl).then(() => {
-      copyBtn.textContent = "Copied!";
-      setTimeout(() => (copyBtn.textContent = "Copy URL"), 1500);
+      copyBtn.textContent = "已複製！";
+      setTimeout(() => (copyBtn.textContent = "複製網址"), 1500);
     });
   });
 };
@@ -114,6 +114,6 @@ form.addEventListener("submit", async (event) => {
     showResult({ shortUrl, payload: data });
     form.reset();
   } catch (error) {
-    alert(`Failed to create short link: ${error.message}`);
+    alert(`建立短網址失敗：${error.message}`);
   }
 });

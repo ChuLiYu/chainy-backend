@@ -94,12 +94,13 @@ resource "aws_acm_certificate_validation" "web" {
 resource "aws_cloudfront_distribution" "web" {
   enabled             = true
   is_ipv6_enabled     = true
-  comment             = "Chainy web front-end"
+  comment             = "Chainy web front-end with API Gateway integration"
   price_class         = var.price_class
   default_root_object = var.index_document
 
   aliases = [local.full_domain]
 
+  # S3 origin for static website files
   origin {
     domain_name = aws_s3_bucket.web.bucket_regional_domain_name
     origin_id   = "s3-web-origin"
@@ -107,14 +108,58 @@ resource "aws_cloudfront_distribution" "web" {
     origin_access_control_id = aws_cloudfront_origin_access_control.web.id
   }
 
+  # API Gateway origin for short link redirects
+  origin {
+    domain_name = var.api_domain_name
+    origin_id   = "api-gateway-origin"
+
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "https-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+  }
+
+  # Default behavior: Try API Gateway first for potential short links
+  # This allows short codes at the root level like /abc123
   default_cache_behavior {
-    target_origin_id       = "s3-web-origin"
+    target_origin_id       = "api-gateway-origin"
+    viewer_protocol_policy = "redirect-to-https"
+    allowed_methods        = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+    cached_methods         = ["GET", "HEAD"]
+    compress               = false
+
+    # Disable caching for short links to track clicks accurately
+    cache_policy_id = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad" # Managed-CachingDisabled
+    origin_request_policy_id = "b689b0a8-53d0-40ab-baf2-68738e2966ac" # Managed-AllViewerExceptHostHeader
+  }
+
+  # Explicitly route static assets to S3
+  ordered_cache_behavior {
+    path_pattern     = "/assets/*"
+    target_origin_id = "s3-web-origin"
+
     viewer_protocol_policy = "redirect-to-https"
     allowed_methods        = ["GET", "HEAD", "OPTIONS"]
     cached_methods         = ["GET", "HEAD"]
     compress               = true
 
-    cache_policy_id        = "658327ea-f89d-4fab-a63d-7e88639e58f6" # Managed-CachingOptimized
+    cache_policy_id          = "658327ea-f89d-4fab-a63d-7e88639e58f6" # Managed-CachingOptimized
+    origin_request_policy_id = "88a5eaf4-2fd4-4709-b370-b4c650ea3fcf" # Managed-CORS-S3Origin
+  }
+
+  # Route static JS/CSS files to S3
+  ordered_cache_behavior {
+    path_pattern     = "/static/*"
+    target_origin_id = "s3-web-origin"
+
+    viewer_protocol_policy = "redirect-to-https"
+    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
+    cached_methods         = ["GET", "HEAD"]
+    compress               = true
+
+    cache_policy_id          = "658327ea-f89d-4fab-a63d-7e88639e58f6" # Managed-CachingOptimized
     origin_request_policy_id = "88a5eaf4-2fd4-4709-b370-b4c650ea3fcf" # Managed-CORS-S3Origin
   }
 
