@@ -11,6 +11,7 @@ Run the SSM parameter setup script:
 ```
 
 This script will:
+
 - Check AWS CLI configuration
 - Generate secure hash salts
 - Create parameters in SSM Parameter Store
@@ -81,12 +82,14 @@ extra_tags = {
 ## 🔐 Security Features
 
 ### API Authentication
+
 - CRUD endpoints require API Key authentication
 - Redirect endpoints remain public
 - Rate limiting: 50 requests/second, 100 burst
 - Daily quota: 10,000 requests
 
 ### SSM Parameter Management
+
 - Hash salts stored in SSM Parameter Store
 - Uses SecureString type encryption
 - 5-minute cache mechanism
@@ -95,11 +98,13 @@ extra_tags = {
 ## 📊 Monitoring and Logging
 
 ### CloudWatch Logs
+
 - Lambda function logs retained for 14 days
 - Automatic log group creation
 - Structured log output
 
 ### Recommended Monitoring Metrics
+
 - Lambda error rate
 - API Gateway 4XX/5XX errors
 - DynamoDB read/write capacity
@@ -162,14 +167,17 @@ terraform apply -target=module.lambda
 ### Common Issues
 
 1. **SSM Parameter Not Found**
+
    - Run `./scripts/setup-ssm-parameters.sh`
    - Check IAM permissions
 
 2. **API Key Authentication Failed**
+
    - Verify API Key is correct
    - Check Usage Plan configuration
 
 3. **Lambda Timeout**
+
    - Check SSM parameter access
    - Increase Lambda timeout
 
@@ -190,16 +198,19 @@ aws logs describe-log-groups --log-group-name-prefix "/aws/apigateway"
 ## 📈 Performance Optimization
 
 ### Lambda Configuration
+
 - Memory: 128MB (redirect), 256MB (create)
 - Timeout: 3s (redirect), 10s (create)
 - Concurrency limit: Default unlimited
 
 ### DynamoDB Configuration
+
 - On-demand billing mode
 - Auto-scaling
 - Global secondary index support
 
 ### S3 Configuration
+
 - Standard storage class
 - 30-day lifecycle expiration
 - Server-side encryption
@@ -215,7 +226,89 @@ aws logs describe-log-groups --log-group-name-prefix "/aws/apigateway"
 ## 📞 Support
 
 If you encounter issues, please check:
+
 1. Terraform state file
 2. CloudWatch logs
 3. AWS service health status
 4. IAM permission configuration
+
+## 🚨 Troubleshooting Guide
+
+### Common Deployment Issues
+
+#### 1. Terraform State Lock Error
+```bash
+# Error: Error acquiring the state lock
+# Solution: Force unlock
+terraform force-unlock LOCK_ID
+```
+
+#### 2. API Key Region Mismatch
+```bash
+# Error: Invalid API Key identifier specified
+# Solution: Specify correct region
+aws apigateway get-api-key --api-key KEY_ID --include-value --region ap-northeast-1
+```
+
+#### 3. API Request Format Issues
+```bash
+# Error: Target URL is required
+# Solution: Use correct field name
+curl -X POST "$API_ENDPOINT/links" -d '{"target": "https://example.com"}'
+```
+
+#### 4. SSL Certificate Pending Validation
+```bash
+# Check certificate status
+aws acm describe-certificate --certificate-arn CERTIFICATE_ARN --region us-east-1
+# Wait 5-15 minutes for DNS propagation
+```
+
+#### 5. Redirect Function Returns 404
+- Check DynamoDB data exists
+- Verify API Gateway routes
+- Check Lambda function logs
+- Ensure correct region for all operations
+
+### Debugging Commands
+
+#### Check API Gateway Routes
+```bash
+aws apigatewayv2 get-routes --api-id API_ID --region ap-northeast-1
+```
+
+#### Check Lambda Function Status
+```bash
+aws lambda get-function --function-name FUNCTION_NAME --region ap-northeast-1
+```
+
+#### Check DynamoDB Data
+```bash
+aws dynamodb get-item --table-name TABLE_NAME --key '{"code": {"S": "CODE"}}' --region ap-northeast-1
+```
+
+#### Check CloudWatch Logs
+```bash
+aws logs describe-log-groups --log-group-name-prefix "/aws/lambda/chainy-dev" --region ap-northeast-1
+```
+
+### Current Deployment Status
+
+#### ✅ Working Components
+- **API Gateway**: `https://9qwxcajqf9.execute-api.ap-northeast-1.amazonaws.com`
+- **Lambda Functions**: create, redirect (both active)
+- **DynamoDB**: `chainy-dev-chainy-links` table
+- **S3 Buckets**: `chainy-dev-chainy-events`, `chainy-dev-web`
+- **SSM Parameters**: Hash salts stored securely
+- **API Authentication**: API Key working
+
+#### 🔄 Pending Components
+- **SSL Certificate**: Pending DNS validation
+- **CloudFront**: Waiting for SSL certificate
+- **Custom Domain**: `chainy.luichu.dev` (pending SSL)
+
+#### 🚨 Known Issues
+- **Redirect Function**: Returns 404 (investigating)
+- **CloudFront Output**: Not available until SSL validation
+
+For detailed troubleshooting information, see [deployment-troubleshooting.md](./deployment-troubleshooting.md)

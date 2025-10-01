@@ -104,15 +104,13 @@ Create a `terraform.tfvars` (or environment-specific `dev.tfvars`) with at least
 environment = "dev"
 region      = "ap-northeast-1"
 
-lambda_additional_environment = {
-  CHAINY_HASH_SALT    = "replace-with-random-salt"
-  CHAINY_IP_HASH_SALT = "replace-with-random-ip-salt"
-}
+# Optional additional environment variables for Lambda
+lambda_additional_environment = {}
 ```
 
 - `environment` 控制資源命名、tag 與輸出；`region` 預設為 `ap-northeast-1`，可依需求調整。
-- `lambda_additional_environment` 會傳入兩個 Lambda，這些環境變數用於雜湊 owner/user-agent/IP。建議使用 `openssl rand -hex 32` 產生隨機鹽值，並依環境（dev/staging/prod）分開設定。
-- 若不想寫在檔案，可在 CLI 執行時帶 `-var` 或以 CI/CD Secrets 注入。
+- `lambda_additional_environment` 儘可額外補充 env；雜湊鹽值預設由 AWS Systems Manager Parameter Store 取得，路徑為 `/chainy/<environment>/CHAINY_HASH_SALT` 與 `/chainy/<environment>/CHAINY_IP_HASH_SALT`，可透過 `hash_salt_parameter_name` / `ip_hash_salt_parameter_name` 覆寫。
+- 使用 `aws ssm put-parameter --type SecureString --value "$(openssl rand -hex 32)"` 建立鹽值，並確保 Lambda IAM 角色具備 `ssm:GetParameter` 權限。
 
 ## Minimal Web Client
 
@@ -215,6 +213,29 @@ With fewer than 10k events per month, the direct-to-S3 approach keeps costs to p
 - **S3 PUT**: $0.005 per 1,000 requests → ≈ $0.05 for 10k events.
 - **S3 storage**: JSONL events (a few KB each) stay under a few cents per month; lifecycle expires or transitions them after `click_events_retention_days` (default 30 days).
 - **Lambda**: Millisecond execution time leads to <$0.01/month at the stated volume.
+
+## 🎯 Current Deployment Status
+
+### ✅ Successfully Deployed
+- **Backend API**: `https://9qwxcajqf9.execute-api.ap-northeast-1.amazonaws.com`
+- **Lambda Functions**: create, redirect (both active)
+- **DynamoDB**: `chainy-dev-chainy-links` table
+- **S3 Storage**: Events and web hosting buckets
+- **SSM Parameters**: Secure hash salt storage
+- **API Authentication**: API Key with rate limiting
+
+### 🔄 In Progress
+- **SSL Certificate**: Pending DNS validation
+- **CloudFront**: Waiting for SSL certificate
+- **Custom Domain**: `chainy.luichu.dev` (pending SSL)
+
+### 🚨 Known Issues
+- **Redirect Function**: Returns 404 (investigating)
+- **CloudFront Output**: Not available until SSL validation
+
+### 📚 Additional Documentation
+- [Troubleshooting Guide](docs/deployment-troubleshooting.md)
+- [Quick Reference](docs/quick-reference.md)
 
 ## CI/CD
 
