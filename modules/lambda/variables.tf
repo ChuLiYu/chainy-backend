@@ -97,3 +97,15 @@ variable "ip_hash_salt_fallback" {
   type        = string
   default     = ""
 }
+
+variable "web_domain" {
+  description = "Optional root domain used to construct the public short link URL."
+  type        = string
+  default     = null
+}
+
+variable "web_subdomain" {
+  description = "Subdomain portion used for short links (e.g. chainy -> chainy.example.com)."
+  type        = string
+  default     = "chainy"
+}

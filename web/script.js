@@ -83,7 +83,7 @@ form.addEventListener("submit", async (event) => {
     }
 
     const data = await response.json();
-    const shortUrl = `${apiBase}/${data.code}`;
+    const shortUrl = (data.short_url ?? "").trim().length > 0 ? data.short_url : `${apiBase}/${data.code}`;
     showResult({ shortUrl, payload: data });
     form.reset();
     apiField.value = apiBase;

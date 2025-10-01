@@ -30,6 +30,10 @@ locals {
     ]
   }
 
+  short_link_environment = var.web_domain == null ? {} : {
+    CHAINY_SHORT_BASE_URL = "https://${var.web_subdomain}.${var.web_domain}"
+  }
+
   base_environment = merge({
     CHAINY_ENVIRONMENT           = var.environment,
     CHAINY_TABLE_NAME            = var.table_name,
@@ -38,7 +42,7 @@ locals {
     CHAINY_IP_HASH_SALT_PARAM    = var.ip_hash_salt_parameter_name,
     CHAINY_HASH_SALT             = var.hash_salt_fallback,
     CHAINY_IP_HASH_SALT          = var.ip_hash_salt_fallback
-  }, var.additional_environment)
+  }, local.short_link_environment, var.additional_environment)
 
   source_dirs = {
     redirect = var.redirect_source_dir

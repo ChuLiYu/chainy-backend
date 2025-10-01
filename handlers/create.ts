@@ -72,6 +72,39 @@ function headerLookup(event: APIGatewayProxyEventV2, name: string): string | und
 
 const UTM_FIELDS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"] as const;
 
+const SHORT_BASE_URL = process.env.CHAINY_SHORT_BASE_URL;
+
+function resolveShortBaseUrl(event: APIGatewayProxyEventV2): string | undefined {
+  if (SHORT_BASE_URL && SHORT_BASE_URL.trim().length > 0) {
+    return SHORT_BASE_URL.replace(/\/$/, "");
+  }
+
+  const domainName = event.requestContext?.domainName;
+  if (!domainName) {
+    return undefined;
+  }
+
+  const forwardedProto = headerLookup(event, "x-forwarded-proto") ?? "https";
+  const stage = event.requestContext?.stage && event.requestContext.stage !== "$default"
+    ? `/${event.requestContext.stage}`
+    : "";
+
+  return `${forwardedProto}://${domainName}${stage}`.replace(/\/$/, "");
+}
+
+function appendShortUrl<T extends { code: string }>(link: T, event: APIGatewayProxyEventV2): T & { short_url?: string } {
+  const base = resolveShortBaseUrl(event);
+
+  if (!base) {
+    return link;
+  }
+
+  return {
+    ...link,
+    short_url: `${base}/${link.code}`,
+  };
+}
+
 // Collect request metadata that flows into the events pipeline.
 function extractRequestMetadata(event: APIGatewayProxyEventV2) {
   const headers = event.headers ?? {};
@@ -329,14 +362,17 @@ async function handleCreate(event: APIGatewayProxyEventV2): Promise<APIGatewayPr
     console.error("Failed to write link_create event to S3", error);
   }
 
-  return jsonResponse(201, {
-    code,
-    target,
-    owner,
-    wallet_address: walletAddress,
-    created_at: timestamp,
-    updated_at: timestamp,
-  });
+  return jsonResponse(201, appendShortUrl(
+    {
+      code,
+      target,
+      owner,
+      wallet_address: walletAddress,
+      created_at: timestamp,
+      updated_at: timestamp,
+    },
+    event,
+  ));
 }
 
 async function handleUpdate(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> {
@@ -413,7 +449,7 @@ async function handleUpdate(event: APIGatewayProxyEventV2): Promise<APIGatewayPr
     console.error("Failed to write link_update event to S3", error);
   });
 
-  return jsonResponse(200, link);
+  return jsonResponse(200, appendShortUrl(link, event));
 }
 
 async function handleGet(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> {
@@ -435,7 +471,7 @@ async function handleGet(event: APIGatewayProxyEventV2): Promise<APIGatewayProxy
     return jsonResponse(404, { message: "Short link not found" });
   }
 
-  return jsonResponse(200, Item as ChainyLink);
+  return jsonResponse(200, appendShortUrl(Item as ChainyLink, event));
 }
 
 async function handleDelete(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> {
