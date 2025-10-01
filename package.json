@@ -10,7 +10,7 @@
   "scripts": {
     "package": "node ./scripts/build-lambdas.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "node --import ./scripts/register-loader.mjs --test tests/**/*.test.ts"
+    "test": "node --import ./scripts/register-loader.mjs --test $(find tests -name '*.test.ts')"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.590.0",
