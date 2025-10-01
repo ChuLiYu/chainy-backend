@@ -49,12 +49,12 @@ module "lambda" {
   redirect_source_dir = local.redirect_source_dir
   create_source_dir   = local.create_source_dir
 
-  log_retention_in_days  = var.log_retention_in_days
-  additional_environment = local.lambda_environment
-  hash_salt_parameter_name = local.hash_salt_parameter_name
+  log_retention_in_days       = var.log_retention_in_days
+  additional_environment      = local.lambda_environment
+  hash_salt_parameter_name    = local.hash_salt_parameter_name
   ip_hash_salt_parameter_name = local.ip_salt_parameter_name
-  hash_salt_fallback = var.hash_salt_fallback
-  ip_hash_salt_fallback = var.ip_hash_salt_fallback
+  hash_salt_fallback          = var.hash_salt_fallback
+  ip_hash_salt_fallback       = var.ip_hash_salt_fallback
 }
 
 # HTTP API Gateway exposing redirect and CRUD routes.
