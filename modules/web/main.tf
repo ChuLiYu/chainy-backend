@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     aws = {
-      source = "hashicorp/aws"
+      source                = "hashicorp/aws"
       configuration_aliases = [aws.us_east_1]
     }
   }
@@ -121,8 +121,7 @@ resource "aws_cloudfront_distribution" "web" {
     }
   }
 
-  # Default behavior: Try API Gateway first for potential short links
-  # This allows short codes at the root level like /abc123
+  # Default behavior: Try API Gateway for short links
   default_cache_behavior {
     target_origin_id       = "api-gateway-origin"
     viewer_protocol_policy = "redirect-to-https"
@@ -130,9 +129,37 @@ resource "aws_cloudfront_distribution" "web" {
     cached_methods         = ["GET", "HEAD"]
     compress               = false
 
-    # Disable caching for short links to track clicks accurately
-    cache_policy_id = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad" # Managed-CachingDisabled
+    # Disable caching for short links
+    cache_policy_id          = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad" # Managed-CachingDisabled
     origin_request_policy_id = "b689b0a8-53d0-40ab-baf2-68738e2966ac" # Managed-AllViewerExceptHostHeader
+  }
+
+  # Route HTML files to S3
+  ordered_cache_behavior {
+    path_pattern     = "*.html"
+    target_origin_id = "s3-web-origin"
+
+    viewer_protocol_policy = "redirect-to-https"
+    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
+    cached_methods         = ["GET", "HEAD"]
+    compress               = true
+
+    cache_policy_id          = "658327ea-f89d-4fab-a63d-7e88639e58f6" # Managed-CachingOptimized
+    origin_request_policy_id = "88a5eaf4-2fd4-4709-b370-b4c650ea3fcf" # Managed-CORS-S3Origin
+  }
+
+  # Route SVG files to S3
+  ordered_cache_behavior {
+    path_pattern     = "*.svg"
+    target_origin_id = "s3-web-origin"
+
+    viewer_protocol_policy = "redirect-to-https"
+    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
+    cached_methods         = ["GET", "HEAD"]
+    compress               = true
+
+    cache_policy_id          = "658327ea-f89d-4fab-a63d-7e88639e58f6" # Managed-CachingOptimized
+    origin_request_policy_id = "88a5eaf4-2fd4-4709-b370-b4c650ea3fcf" # Managed-CORS-S3Origin
   }
 
   # Explicitly route static assets to S3
@@ -170,9 +197,9 @@ resource "aws_cloudfront_distribution" "web" {
   }
 
   viewer_certificate {
-    acm_certificate_arn            = aws_acm_certificate_validation.web.certificate_arn
-    ssl_support_method             = "sni-only"
-    minimum_protocol_version       = "TLSv1.2_2021"
+    acm_certificate_arn      = aws_acm_certificate_validation.web.certificate_arn
+    ssl_support_method       = "sni-only"
+    minimum_protocol_version = "TLSv1.2_2021"
   }
 
   custom_error_response {

@@ -29,9 +29,3 @@ output "web_cloudfront_domain" {
   description = "CloudFront distribution domain name for the web front-end (if provisioned)."
   value       = try(module.web[0].cloudfront_domain_name, null)
 }
-
-output "api_key_id" {
-  description = "API Key ID for authentication."
-  value       = module.api.api_key_id
-  sensitive   = true
-}

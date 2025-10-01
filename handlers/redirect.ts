@@ -126,8 +126,25 @@ export async function handler(
   context.callbackWaitsForEmptyEventLoop = false;
 
   const code = event.pathParameters?.code;
-
-  if (!code) {
+  
+  // Handle root path - redirect to frontend
+  if (!code || code === "" || code === "/") {
+    const webDomain = process.env.WEB_DOMAIN;
+    const webSubdomain = process.env.WEB_SUBDOMAIN || "chainy";
+    const fullDomain = webDomain ? `https://${webSubdomain}.${webDomain}` : "";
+    
+    // If web domain is configured, redirect to index.html
+    if (fullDomain) {
+      return {
+        statusCode: 302,
+        headers: {
+          Location: `${fullDomain}/index.html`,
+          "Cache-Control": "no-store",
+        },
+        body: "",
+      };
+    }
+    
     return jsonResponse(400, { message: "Missing short code" });
   }
 
@@ -143,6 +160,92 @@ export async function handler(
     );
 
     if (!Item) {
+      // Check if request accepts HTML (from browser)
+      const acceptHeader = event.headers?.accept || event.headers?.Accept || "";
+      const isFromBrowser = acceptHeader.includes("text/html");
+      
+      if (isFromBrowser) {
+        // Return HTML page for browser requests
+        return {
+          statusCode: 404,
+          headers: {
+            "Content-Type": "text/html",
+            "Cache-Control": "no-store",
+          },
+          body: `<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>短網址不存在 - Chainy</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 500px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    h1 {
+      color: #667eea;
+      font-size: 48px;
+      margin: 0 0 10px 0;
+    }
+    p {
+      color: #666;
+      font-size: 18px;
+      margin: 20px 0;
+    }
+    .code {
+      background: #f5f5f5;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 16px;
+      color: #333;
+      margin: 20px 0;
+    }
+    a {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      text-decoration: none;
+      padding: 15px 30px;
+      border-radius: 10px;
+      font-weight: bold;
+      margin-top: 20px;
+      transition: transform 0.2s;
+    }
+    a:hover {
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>404</h1>
+    <p>抱歉，找不到這個短網址</p>
+    <div class="code">/${code}</div>
+    <p>這個短網址可能已過期或不存在</p>
+    <a href="/">建立新的短網址</a>
+  </div>
+</body>
+</html>`,
+        };
+      }
+      
+      // Return JSON for API requests
       return jsonResponse(404, { message: "Short link not found" });
     }
 

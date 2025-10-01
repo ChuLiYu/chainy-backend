@@ -57,44 +57,6 @@ resource "aws_apigatewayv2_route" "create" {
   api_id    = aws_apigatewayv2_api.chainy.id
   route_key = each.value
   target    = "integrations/${aws_apigatewayv2_integration.links.id}"
-  
-  # Require API Key for authenticated endpoints
-  api_key_required = true
-}
-
-# API Key for authentication
-resource "aws_api_gateway_api_key" "chainy" {
-  name = "${local.api_name}-key"
-  tags = var.tags
-}
-
-# Usage Plan for API Key
-resource "aws_api_gateway_usage_plan" "chainy" {
-  name = "${local.api_name}-usage-plan"
-  
-  api_stages {
-    api_id = aws_apigatewayv2_api.chainy.id
-    stage  = aws_apigatewayv2_stage.main.name
-  }
-  
-  quota_settings {
-    limit  = 10000
-    period = "DAY"
-  }
-  
-  throttle_settings {
-    burst_limit = 100
-    rate_limit  = 50
-  }
-  
-  tags = var.tags
-}
-
-# Associate API Key with Usage Plan
-resource "aws_api_gateway_usage_plan_key" "chainy" {
-  key_id        = aws_api_gateway_api_key.chainy.id
-  key_type      = "API_KEY"
-  usage_plan_id = aws_api_gateway_usage_plan.chainy.id
 }
 
 # Use the default stage with modest throttling defaults.
