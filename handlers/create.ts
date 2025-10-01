@@ -216,7 +216,10 @@ export async function handler(
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    const isClientError = message.includes("Invalid JSON") || message.includes("Target URL");
+    const isClientError =
+      message.includes("Invalid JSON") ||
+      message.includes("Target URL") ||
+      message.includes("Custom code");
     const statusCode = isClientError ? 400 : 500;
 
     console.error(`Error handling ${method} request`, error);
@@ -232,15 +235,18 @@ async function handleCreate(event: APIGatewayProxyEventV2): Promise<APIGatewayPr
   const requestedCode = typeof payload.code === "string" ? payload.code.trim() : undefined;
   const walletAddress = typeof payload.wallet_address === "string" ? payload.wallet_address : undefined;
 
-  // Reject custom codes for non-premium users
-  if (requestedCode && requestedCode.length > 0) {
-    return jsonResponse(403, {
-      message: "Custom short codes are a premium feature. Please upgrade to use this feature.",
-      upgrade_required: true
-    });
-  }
+  const code = (() => {
+    if (!requestedCode || requestedCode.length === 0) {
+      return generateShortCode();
+    }
 
-  const code = generateShortCode();
+    const normalised = requestedCode.toString().trim();
+    if (!/^[a-zA-Z0-9_-]{4,32}$/.test(normalised)) {
+      throw new Error("Custom code must be 4-32 characters of letters, numbers, '-' or '_'");
+    }
+
+    return normalised;
+  })();
   const timestamp = new Date().toISOString();
 
   const item: ChainyLink = {
