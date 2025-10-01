@@ -16,18 +16,10 @@
       </section>
 
       <section class="card">
-        <form id="link-form">
-          <label class="field">
-            <span>API Endpoint</span>
-            <input
-              id="apiEndpoint"
-              type="url"
-              placeholder="https://xxxxxx.execute-api.ap-northeast-1.amazonaws.com"
-              required
-            />
-            <small>Paste the HTTP API base URL (no trailing slash).</small>
-          </label>
+        <h2>Shorten URL</h2>
+        <p class="card-subtitle">Drop in your target link and we’ll mint a crypto-friendly short URL.</p>
 
+        <form id="link-form">
           <label class="field">
             <span>Target URL</span>
             <input
@@ -38,20 +30,16 @@
             />
           </label>
 
-          <label class="field">
-            <span>Custom Code (optional)</span>
-            <input id="customCode" type="text" placeholder="my-web3-launch" />
-          </label>
-
-          <label class="field">
-            <span>Owner (optional)</span>
-            <input id="owner" type="text" placeholder="alice" />
-          </label>
-
           <button type="submit">Generate Short Link</button>
         </form>
 
         <div id="result" class="result hidden"></div>
+
+        <p class="card-note">
+          API endpoint
+          <span id="apiDisplay"></span>
+          <button id="changeApi" type="button" class="link-button">Change</button>
+        </p>
       </section>
 
       <footer class="footer">
