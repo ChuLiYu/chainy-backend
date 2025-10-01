@@ -38,6 +38,13 @@ resource "aws_apigatewayv2_integration" "links" {
   integration_uri        = "arn:aws:apigateway:${data.aws_region.current.name}:lambda:path/2015-03-31/functions/${var.create_lambda_arn}/invocations"
 }
 
+# Root path route for frontend redirect
+resource "aws_apigatewayv2_route" "root" {
+  api_id    = aws_apigatewayv2_api.chainy.id
+  route_key = "GET /"
+  target    = "integrations/${aws_apigatewayv2_integration.redirect.id}"
+}
+
 # Catch-all GET route resolves short codes to targets.
 resource "aws_apigatewayv2_route" "redirect" {
   api_id    = aws_apigatewayv2_api.chainy.id
@@ -65,7 +72,7 @@ resource "aws_apigatewayv2_route" "create" {
 
 # Lambda Authorizer for JWT authentication
 resource "aws_apigatewayv2_authorizer" "jwt" {
-  count = var.enable_authentication && var.authorizer_lambda_arn != "" ? 1 : 0
+  count = var.enable_authentication ? 1 : 0
 
   api_id          = aws_apigatewayv2_api.chainy.id
   authorizer_type = "REQUEST"
@@ -74,8 +81,9 @@ resource "aws_apigatewayv2_authorizer" "jwt" {
 
   identity_sources = ["$request.header.Authorization"]
 
-  authorizer_result_ttl_in_seconds = 300
-  enable_simple_responses          = false
+  authorizer_payload_format_version = "2.0"
+  authorizer_result_ttl_in_seconds  = 300
+  enable_simple_responses           = false
 }
 
 # Permission for API Gateway to invoke the authorizer

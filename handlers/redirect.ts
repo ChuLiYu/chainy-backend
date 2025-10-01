@@ -145,7 +145,74 @@ export async function handler(
       };
     }
     
-    return jsonResponse(400, { message: "Missing short code" });
+    // Return a simple welcome page for root path
+    return {
+      statusCode: 200,
+      headers: {
+        "Content-Type": "text/html",
+        "Cache-Control": "no-store",
+      },
+      body: `<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chainy - 短網址服務</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 500px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    h1 {
+      color: #667eea;
+      font-size: 48px;
+      margin: 0 0 10px 0;
+    }
+    p {
+      color: #666;
+      font-size: 18px;
+      margin: 20px 0;
+    }
+    .api-info {
+      background: #f5f5f5;
+      padding: 20px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 14px;
+      color: #333;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>CHAINY</h1>
+    <p>短網址生成服務</p>
+    <div class="api-info">
+      <strong>API 端點：</strong><br>
+      POST /links - 創建短網址<br>
+      GET /{code} - 重定向到目標網址<br>
+      GET /links/{code} - 獲取短網址資訊
+    </div>
+    <p>需要 JWT 認證才能創建短網址</p>
+  </div>
+</body>
+</html>`,
+    };
   }
 
   try {

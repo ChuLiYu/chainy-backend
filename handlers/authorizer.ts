@@ -49,7 +49,7 @@ async function getJwtSecret(): Promise<string> {
 }
 
 /**
- * Generate IAM policy document
+ * Generate IAM policy document for API Gateway v2
  */
 function generatePolicy(
   principalId: string,
@@ -57,7 +57,7 @@ function generatePolicy(
   resource: string,
   context?: Record<string, string | number | boolean>
 ): APIGatewayAuthorizerResult {
-  return {
+  const policy = {
     principalId,
     policyDocument: {
       Version: "2012-10-17",
@@ -71,6 +71,10 @@ function generatePolicy(
     },
     context,
   };
+  
+  console.log("Policy structure:", JSON.stringify(policy, null, 2));
+  
+  return policy;
 }
 
 /**
@@ -129,19 +133,35 @@ export async function handler(
     const email = decoded.email || "";
     const name = decoded.name || "";
 
-    // Generate Allow policy with user context
-    return generatePolicy(
-      userId,
-      "Allow",
-      event.methodArn,
-      {
+    // For API Gateway v2, return a simple policy
+    const policy = {
+      principalId: userId,
+      policyDocument: {
+        Version: "2012-10-17",
+        Statement: [
+          {
+            Action: "execute-api:Invoke",
+            Effect: "Allow",
+            Resource: "arn:aws:execute-api:ap-northeast-1:277375108569:9qwxcajqf9/$default/*/*",
+          },
+        ],
+      },
+      context: {
         userId,
         email,
         name,
-        // Pass additional claims as needed
         ...(decoded.role && { role: decoded.role }),
-      }
-    );
+      },
+    };
+    
+    console.log("Returning policy:", JSON.stringify(policy, null, 2));
+    
+    try {
+      return policy;
+    } catch (error) {
+      console.error("Error returning policy:", error);
+      throw error;
+    }
   } catch (error) {
     console.error("Token verification failed:", error);
 
