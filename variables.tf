@@ -108,3 +108,66 @@ variable "web_price_class" {
   type        = string
   default     = "PriceClass_100"
 }
+
+# ============================================================================
+# Security Configuration
+# ============================================================================
+
+variable "enable_authentication" {
+  description = "Enable JWT authentication for API endpoints."
+  type        = bool
+  default     = false
+}
+
+variable "jwt_secret" {
+  description = "JWT secret for signing tokens. Leave empty to auto-generate."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "enable_waf" {
+  description = "Enable AWS WAF for API Gateway protection."
+  type        = bool
+  default     = false
+}
+
+variable "waf_rate_limit_per_5min" {
+  description = "Maximum number of requests per IP address per 5 minutes."
+  type        = number
+  default     = 2000
+}
+
+variable "waf_blocked_countries" {
+  description = "List of country codes to block (ISO 3166-1 alpha-2)."
+  type        = list(string)
+  default     = []
+}
+
+# ============================================================================
+# Budget and Cost Control
+# ============================================================================
+
+variable "enable_budget_monitoring" {
+  description = "Enable AWS Budgets monitoring and alerts."
+  type        = bool
+  default     = false
+}
+
+variable "monthly_budget_limit" {
+  description = "Monthly budget limit in USD. Alerts at 80% and 100%."
+  type        = number
+  default     = 20
+}
+
+variable "daily_cost_threshold" {
+  description = "Daily cost threshold in USD for CloudWatch alerts."
+  type        = number
+  default     = 2
+}
+
+variable "budget_alert_emails" {
+  description = "List of email addresses to receive budget alerts."
+  type        = list(string)
+  default     = []
+}

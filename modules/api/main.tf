@@ -57,6 +57,36 @@ resource "aws_apigatewayv2_route" "create" {
   api_id    = aws_apigatewayv2_api.chainy.id
   route_key = each.value
   target    = "integrations/${aws_apigatewayv2_integration.links.id}"
+
+  # Apply authorizer to CRUD endpoints if authentication is enabled
+  authorization_type = var.enable_authentication ? "CUSTOM" : "NONE"
+  authorizer_id      = var.enable_authentication && length(aws_apigatewayv2_authorizer.jwt) > 0 ? aws_apigatewayv2_authorizer.jwt[0].id : null
+}
+
+# Lambda Authorizer for JWT authentication
+resource "aws_apigatewayv2_authorizer" "jwt" {
+  count = var.enable_authentication && var.authorizer_lambda_arn != "" ? 1 : 0
+
+  api_id          = aws_apigatewayv2_api.chainy.id
+  authorizer_type = "REQUEST"
+  name            = "${var.project}-${var.environment}-jwt-authorizer"
+  authorizer_uri  = var.authorizer_lambda_arn
+
+  identity_sources = ["$request.header.Authorization"]
+
+  authorizer_result_ttl_in_seconds = 300
+  enable_simple_responses          = false
+}
+
+# Permission for API Gateway to invoke the authorizer
+resource "aws_lambda_permission" "authorizer" {
+  count = var.enable_authentication && var.authorizer_lambda_name != "" ? 1 : 0
+
+  statement_id  = "AllowInvokeByHttpApiAuthorizer"
+  action        = "lambda:InvokeFunction"
+  function_name = var.authorizer_lambda_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "arn:aws:execute-api:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.chainy.id}/authorizers/${try(aws_apigatewayv2_authorizer.jwt[0].id, "*")}"
 }
 
 # Use the default stage with modest throttling defaults.
