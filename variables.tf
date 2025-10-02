@@ -171,3 +171,38 @@ variable "budget_alert_emails" {
   type        = list(string)
   default     = []
 }
+
+# ============================================================================
+# Google OAuth Configuration
+# ============================================================================
+
+variable "google_client_id" {
+  description = "Google OAuth 2.0 Client ID for authentication."
+  type        = string
+  default     = ""
+}
+
+variable "google_client_secret" {
+  description = "Google OAuth 2.0 Client Secret for authentication."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "google_redirect_uri" {
+  description = "Google OAuth redirect URI used when exchanging authorization codes."
+  type        = string
+  default     = ""
+}
+
+variable "users_table_name" {
+  description = "DynamoDB users table name for storing user information."
+  type        = string
+  default     = ""
+}
+
+variable "users_table_arn" {
+  description = "DynamoDB users table ARN for IAM permissions."
+  type        = string
+  default     = ""
+}

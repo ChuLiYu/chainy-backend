@@ -38,6 +38,17 @@ resource "aws_apigatewayv2_integration" "links" {
   integration_uri        = "arn:aws:apigateway:${data.aws_region.current.name}:lambda:path/2015-03-31/functions/${var.create_lambda_arn}/invocations"
 }
 
+# Proxy integration for Google Auth Lambda.
+resource "aws_apigatewayv2_integration" "google_auth" {
+  count = var.google_auth_lambda_arn != "" ? 1 : 0
+
+  api_id                 = aws_apigatewayv2_api.chainy.id
+  integration_type       = "AWS_PROXY"
+  integration_method     = "POST"
+  payload_format_version = "2.0"
+  integration_uri        = var.google_auth_lambda_arn
+}
+
 # Root path route for frontend redirect
 resource "aws_apigatewayv2_route" "root" {
   api_id    = aws_apigatewayv2_api.chainy.id
@@ -68,6 +79,18 @@ resource "aws_apigatewayv2_route" "create" {
   # Apply authorizer to CRUD endpoints if authentication is enabled
   authorization_type = var.enable_authentication ? "CUSTOM" : "NONE"
   authorizer_id      = var.enable_authentication && length(aws_apigatewayv2_authorizer.jwt) > 0 ? aws_apigatewayv2_authorizer.jwt[0].id : null
+}
+
+# Google Auth endpoint
+resource "aws_apigatewayv2_route" "google_auth" {
+  count = var.google_auth_lambda_arn != "" ? 1 : 0
+
+  api_id    = aws_apigatewayv2_api.chainy.id
+  route_key = "POST /auth/google"
+  target    = "integrations/${aws_apigatewayv2_integration.google_auth[0].id}"
+
+  # No authorization required for Google auth endpoint
+  authorization_type = "NONE"
 }
 
 # Lambda Authorizer for JWT authentication
@@ -130,6 +153,17 @@ resource "aws_lambda_permission" "links" {
   statement_id  = "AllowInvokeByHttpApiLinks"
   action        = "lambda:InvokeFunction"
   function_name = var.create_lambda_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "arn:aws:execute-api:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.chainy.id}/*/*/*"
+}
+
+# Allow API Gateway to invoke the Google Auth Lambda.
+resource "aws_lambda_permission" "google_auth" {
+  count = var.google_auth_lambda_arn != "" ? 1 : 0
+
+  statement_id  = "AllowInvokeByHttpApiGoogleAuth"
+  action        = "lambda:InvokeFunction"
+  function_name = var.google_auth_lambda_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "arn:aws:execute-api:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:${aws_apigatewayv2_api.chainy.id}/*/*/*"
 }

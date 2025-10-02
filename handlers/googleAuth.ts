@@ -135,7 +135,30 @@ async function getJwtSecret(): Promise<string> {
 async function exchangeCodeForToken(code: string, redirectUri?: string, codeVerifier?: string): Promise<any> {
   try {
     const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-    const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+    let GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+    
+    // If client secret is not in environment variables, try to get it from SSM
+    if (!GOOGLE_CLIENT_SECRET) {
+      try {
+        console.log("GOOGLE_CLIENT_SECRET not in env, trying SSM...");
+        const { SSMClient, GetParameterCommand } = await import("@aws-sdk/client-ssm");
+        const ssmClient = new SSMClient({ region: process.env.AWS_REGION || "ap-northeast-1" });
+        
+        const command = new GetParameterCommand({
+          Name: "/chainy/prod/google-client-secret",
+          WithDecryption: true
+        });
+        
+        console.log("Fetching SSM parameter: /chainy/prod/google-client-secret");
+        const response = await ssmClient.send(command);
+        GOOGLE_CLIENT_SECRET = response.Parameter?.Value;
+        console.log("Successfully retrieved Google client secret from SSM");
+      } catch (ssmError) {
+        console.error("Failed to get Google client secret from SSM:", ssmError);
+      }
+    } else {
+      console.log("GOOGLE_CLIENT_SECRET found in environment variables");
+    }
     
     if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
       throw new Error("Google OAuth credentials not configured");

@@ -6,6 +6,7 @@ import {
   DeleteCommand,
   GetCommand,
   PutCommand,
+  ScanCommand,
   UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { randomBytes } from "crypto";
@@ -231,7 +232,17 @@ export async function handler(
 async function handleCreate(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> {
   const payload = parseJsonBody(event);
   const target = assertTargetUrl(payload.target);
-  const owner = typeof payload.owner === "string" ? payload.owner : undefined;
+  
+  // Get user ID from Authorization header for authenticated users
+  const authHeader = headerLookup(event, "authorization");
+  let owner: string | undefined;
+  
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    // TODO: Verify JWT token and extract user ID
+    // For now, we'll use a placeholder user ID
+    owner = "user-placeholder";
+  }
+  
   const requestedCode = typeof payload.code === "string" ? payload.code.trim() : undefined;
   const walletAddress = typeof payload.wallet_address === "string" ? payload.wallet_address : undefined;
 
@@ -461,8 +472,9 @@ async function handleUpdate(event: APIGatewayProxyEventV2): Promise<APIGatewayPr
 async function handleGet(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> {
   const code = event.pathParameters?.code;
 
+  // If no code parameter, this is a request for user's links list
   if (!code) {
-    return jsonResponse(400, { message: "Path parameter 'code' is required" });
+    return await handleGetUserLinks(event);
   }
 
   // Fetch the latest version of the short link.
@@ -480,6 +492,55 @@ async function handleGet(event: APIGatewayProxyEventV2): Promise<APIGatewayProxy
   return jsonResponse(200, appendShortUrl(Item as ChainyLink, event));
 }
 
+async function handleGetUserLinks(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> {
+  // Get user ID from Authorization header
+  const authHeader = headerLookup(event, "authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return jsonResponse(401, { message: "Authorization header required" });
+  }
+
+  const token = authHeader.substring(7);
+  
+  // TODO: Verify JWT token and extract user ID
+  // For now, we'll use a placeholder user ID
+  const userId = "user-placeholder"; // This should be extracted from JWT token
+
+  try {
+    // Scan DynamoDB for links owned by this user and not soft-deleted
+    const { Items } = await documentClient.send(
+      new ScanCommand({
+        TableName: getTableName(),
+        FilterExpression: "#owner = :owner AND attribute_not_exists(deleted_at)",
+        ExpressionAttributeNames: {
+          "#owner": "owner",
+        },
+        ExpressionAttributeValues: {
+          ":owner": userId,
+        },
+      }),
+    );
+
+    if (!Items || Items.length === 0) {
+      return jsonResponse(200, { links: [] });
+    }
+
+    // Sort by creation time descending
+    const sortedItems = Items.sort((a, b) => {
+      const timeA = new Date(a.created_at as string).getTime();
+      const timeB = new Date(b.created_at as string).getTime();
+      return timeB - timeA;
+    });
+
+    // Add short_url to each link
+    const linksWithUrls = sortedItems.map((link) => appendShortUrl(link as ChainyLink, event));
+
+    return jsonResponse(200, { links: linksWithUrls });
+  } catch (error) {
+    console.error("Error fetching user links:", error);
+    return jsonResponse(500, { message: "Failed to fetch user links" });
+  }
+}
+
 async function handleDelete(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> {
   const code = event.pathParameters?.code;
 
@@ -487,20 +548,28 @@ async function handleDelete(event: APIGatewayProxyEventV2): Promise<APIGatewayPr
     return jsonResponse(400, { message: "Path parameter 'code' is required" });
   }
 
-  // Remove the record while ensuring it existed beforehand.
+  // Soft delete: add deleted_at timestamp instead of removing the record
   const result = await documentClient.send(
-    new DeleteCommand({
+    new UpdateCommand({
       TableName: getTableName(),
       Key: { code },
-      ReturnValues: "ALL_OLD",
-      ConditionExpression: "attribute_exists(code)",
+      UpdateExpression: "SET deleted_at = :deleted_at, #updated_at = :updated_at",
+      ExpressionAttributeNames: {
+        "#updated_at": "updated_at",
+      },
+      ExpressionAttributeValues: {
+        ":deleted_at": new Date().toISOString(),
+        ":updated_at": new Date().toISOString(),
+      },
+      ConditionExpression: "attribute_exists(code) AND attribute_not_exists(deleted_at)",
+      ReturnValues: "ALL_NEW",
     }),
   );
 
   const link = result.Attributes as ChainyLink | undefined;
 
   if (!link) {
-    return jsonResponse(404, { message: "Short link not found" });
+    return jsonResponse(404, { message: "Short link not found or already deleted" });
   }
 
   void putDomainEvent({
@@ -508,7 +577,7 @@ async function handleDelete(event: APIGatewayProxyEventV2): Promise<APIGatewayPr
     code,
     detail: {
       owner: link.owner ?? null,
-      deleted_at: new Date().toISOString(),
+      deleted_at: link.deleted_at,
       ...extractRequestMetadata(event),
     },
   }).catch((error: unknown) => {

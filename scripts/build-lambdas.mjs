@@ -22,6 +22,10 @@ const handlers = [
     name: "authorizer",
     entryPoint: path.join(projectRoot, "handlers", "authorizer.ts"),
   },
+  {
+    name: "googleAuth",
+    entryPoint: path.join(projectRoot, "handlers", "googleAuth.ts"),
+  },
 ];
 
 async function run() {

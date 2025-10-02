@@ -52,3 +52,15 @@ variable "enable_authentication" {
   type        = bool
   default     = false
 }
+
+variable "google_auth_lambda_arn" {
+  description = "ARN of the Google Auth Lambda function (optional)."
+  type        = string
+  default     = ""
+}
+
+variable "google_auth_lambda_name" {
+  description = "Name of the Google Auth Lambda function (optional)."
+  type        = string
+  default     = ""
+}

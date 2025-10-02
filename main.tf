@@ -65,6 +65,24 @@ module "authorizer" {
   log_retention_days        = var.log_retention_in_days
 }
 
+# Google OAuth Authentication Lambda (optional).
+module "google_auth" {
+  count  = var.google_client_id != "" ? 1 : 0
+  source = "./modules/auth"
+
+  project     = var.project
+  environment = var.environment
+  tags        = local.tags
+
+  jwt_secret_parameter_name = module.security.jwt_secret_parameter_name
+  jwt_secret_parameter_arn  = module.security.jwt_secret_parameter_arn
+  users_table_name          = var.users_table_name
+  users_table_arn           = var.users_table_arn
+  google_client_id          = var.google_client_id
+  google_client_secret      = var.google_client_secret
+  google_redirect_uri       = var.google_redirect_uri
+}
+
 # Lambda functions for redirecting and managing links, plus IAM roles.
 module "lambda" {
   source      = "./modules/lambda"
@@ -106,6 +124,10 @@ module "api" {
   enable_authentication  = var.enable_authentication
   authorizer_lambda_arn  = var.enable_authentication && length(module.authorizer) > 0 ? module.authorizer[0].invoke_arn : ""
   authorizer_lambda_name = var.enable_authentication && length(module.authorizer) > 0 ? module.authorizer[0].function_name : ""
+
+  # Google Auth configuration
+  google_auth_lambda_arn  = var.google_client_id != "" && length(module.google_auth) > 0 ? module.google_auth[0].function_invoke_arn : ""
+  google_auth_lambda_name = var.google_client_id != "" && length(module.google_auth) > 0 ? module.google_auth[0].function_name : ""
 }
 
 module "web" {
