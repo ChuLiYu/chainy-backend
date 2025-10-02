@@ -1,0 +1,25 @@
+# Google OAuth Configuration
+google_client_id     = "YOUR_GOOGLE_CLIENT_ID"
+google_client_secret = "YOUR_GOOGLE_CLIENT_SECRET"
+google_redirect_uri  = "http://localhost:3000"
+
+# AWS Configuration
+aws_region = "ap-northeast-1"
+environment = "dev"
+
+# Domain Configuration
+domain = "localhost:3000"
+protocol = "http"
+
+# Database Configuration
+dynamodb_table_name = "chainy-dev-links"
+users_table_name = "chainy-dev-users"
+
+# Security Configuration
+jwt_secret_parameter_name = "/chainy/dev/jwt-secret"
+waf_enabled = false
+
+# Cost Optimization
+cost_optimization = false
+debug_mode = true
+log_level = "DEBUG"
