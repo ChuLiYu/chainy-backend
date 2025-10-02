@@ -1,0 +1,120 @@
+#!/bin/bash
+
+# CHAINY Project Git Branch Management and Remote Merge Complete Guide
+echo "🔄 CHAINY Project Git Branch Management and Remote Merge Guide"
+echo "============================================================="
+echo ""
+
+echo "📋 Current Status:"
+echo "✅ Backend functionality moved to feature/pinning-functionality branch"
+echo "✅ Frontend functionality moved to feature/ui-improvements branch"
+echo "✅ Main branch ready to pull remote content"
+echo ""
+
+echo "🎯 Next Steps:"
+echo ""
+
+echo "1️⃣ Set up remote repository (replace with your actual GitHub repository URL):"
+echo ""
+echo "   # Backend"
+echo "   cd /Users/liyu/Programing/aws/chainy"
+echo "   git remote add origin https://github.com/YOUR_USERNAME/YOUR_BACKEND_REPO.git"
+echo ""
+echo "   # Frontend"
+echo "   cd /Users/liyu/Programing/aws/chainy-web"
+echo "   git remote add origin https://github.com/YOUR_USERNAME/YOUR_FRONTEND_REPO.git"
+echo ""
+
+echo "2️⃣ Pull remote main branch:"
+echo ""
+echo "   # Backend"
+echo "   cd /Users/liyu/Programing/aws/chainy"
+echo "   git fetch origin"
+echo "   git checkout main"
+echo "   git pull origin main"
+echo ""
+echo "   # Frontend"
+echo "   cd /Users/liyu/Programing/aws/chainy-web"
+echo "   git fetch origin"
+echo "   git checkout main"
+echo "   git pull origin main"
+echo ""
+
+echo "3️⃣ Merge feature branches to main:"
+echo ""
+echo "   # Backend"
+echo "   cd /Users/liyu/Programing/aws/chainy"
+echo "   git merge feature/pinning-functionality"
+echo ""
+echo "   # Frontend"
+echo "   cd /Users/liyu/Programing/aws/chainy-web"
+echo "   git merge feature/ui-improvements"
+echo ""
+
+echo "4️⃣ Push merged results:"
+echo ""
+echo "   # Backend"
+echo "   cd /Users/liyu/Programing/aws/chainy"
+echo "   git push origin main"
+echo ""
+echo "   # Frontend"
+echo "   cd /Users/liyu/Programing/aws/chainy-web"
+echo "   git push origin main"
+echo ""
+
+echo "5️⃣ Clean up feature branches (optional):"
+echo ""
+echo "   # Backend"
+echo "   cd /Users/liyu/Programing/aws/chainy"
+echo "   git branch -d feature/pinning-functionality"
+echo ""
+echo "   # Frontend"
+echo "   cd /Users/liyu/Programing/aws/chainy-web"
+echo "   git branch -d feature/ui-improvements"
+echo ""
+
+echo "🔍 Check current branch status:"
+echo ""
+echo "Backend branches:"
+cd /Users/liyu/Programing/aws/chainy
+git branch -a
+echo ""
+echo "Frontend branches:"
+cd /Users/liyu/Programing/aws/chainy-web
+git branch -a
+echo ""
+
+echo "📝 Feature branch content summary:"
+echo ""
+echo "🔧 Backend feature/pinning-functionality includes:"
+echo "   - DynamoDB pinned field support"
+echo "   - API endpoint pinning functionality (POST/PUT/GET)"
+echo "   - Short URL list API endpoint (GET /links)"
+echo "   - Pinning sort logic"
+echo "   - Test scripts"
+echo ""
+echo "🎨 Frontend feature/ui-improvements includes:"
+echo "   - Top function bar layout fixes"
+echo "   - UI spacing optimization"
+echo "   - CHAINY title font enlargement"
+echo "   - Pinning functionality frontend interface"
+echo "   - Responsive design support"
+echo ""
+
+echo "⚠️  Important notes:"
+echo "   - If remote main branch has content, it will be automatically merged"
+echo "   - If there are conflicts, manual conflict resolution is required"
+echo "   - Recommend backing up important data before merging"
+echo "   - Ensure remote repository URL is correct"
+echo ""
+
+echo "🎉 After completion you will have:"
+echo "   - Content from remote main branch"
+echo "   - All locally developed improvement features"
+echo "   - Complete version history"
+echo "   - Safe merge results ready for push"
+
+
+
+
+

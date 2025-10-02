@@ -1,0 +1,93 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ap-northeast-1
+  TERRAFORM_VERSION: 1.5.0
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TERRAFORM_VERSION }}
+        
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+        
+    - name: Create production terraform.tfvars
+      run: |
+        cat > chainy/terraform.tfvars << EOF
+        # Google OAuth Configuration
+        google_client_id     = "${{ secrets.GOOGLE_CLIENT_ID }}"
+        google_client_secret = "${{ secrets.GOOGLE_CLIENT_SECRET }}"
+        google_redirect_uri  = "https://chainy.luichu.dev"
+        
+        # AWS Configuration
+        aws_region = "ap-northeast-1"
+        environment = "prod"
+        
+        # Domain Configuration
+        domain = "chainy.luichu.dev"
+        protocol = "https"
+        
+        # Database Configuration
+        dynamodb_table_name = "chainy-prod-links"
+        users_table_name = "chainy-prod-users"
+        
+        # Security Configuration
+        jwt_secret_parameter_name = "/chainy/prod/jwt-secret"
+        waf_enabled = true
+        
+        # Cost Optimization
+        cost_optimization = true
+        debug_mode = false
+        log_level = "ERROR"
+        EOF
+        
+    - name: Terraform Init
+      working-directory: ./chainy
+      run: terraform init
+      
+    - name: Terraform Plan
+      working-directory: ./chainy
+      run: terraform plan
+      
+    - name: Terraform Apply
+      working-directory: ./chainy
+      run: terraform apply -auto-approve
+      
+    - name: Build Frontend
+      working-directory: ./chainy-web
+      run: |
+        npm ci
+        npm run build
+        
+    - name: Deploy Frontend to S3
+      run: |
+        aws s3 sync chainy-web/dist/ s3://${{ secrets.CHAINY_FRONTEND_BUCKET }}/ --delete
+        
+    - name: Invalidate CloudFront Cache
+      run: |
+        aws cloudfront create-invalidation \
+          --distribution-id ${{ secrets.CHAINY_CLOUDFRONT_DISTRIBUTION_ID }} \
+          --paths "/*"
+          
+    - name: Health Check
+      run: |
+        curl -f https://chainy.luichu.dev || exit 1
+        echo "✅ Production deployment successful!"

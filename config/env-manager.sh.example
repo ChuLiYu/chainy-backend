@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# Environment Manager Script Template
+# This script manages environment-specific configurations
+
+set -e
+
+ENVIRONMENT=${1:-"dev"}
+
+case $ENVIRONMENT in
+    "dev")
+        echo "Setting up development environment..."
+        # Development-specific setup
+        ;;
+    "prod")
+        echo "Setting up production environment..."
+        # Production-specific setup
+        ;;
+    *)
+        echo "Unknown environment: $ENVIRONMENT"
+        exit 1
+        ;;
+esac
+
+echo "Environment $ENVIRONMENT configured successfully"

@@ -1,0 +1,29 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "S3SyncBucket",
+      "Effect": "Allow",
+      "Action": ["s3:ListBucket"],
+      "Resource": "arn:aws:s3:::chainy-dev-web"
+    },
+    {
+      "Sid": "S3SyncObjects",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+      "Resource": "arn:aws:s3:::chainy-dev-web/*"
+    },
+    {
+      "Sid": "CloudFrontGet",
+      "Effect": "Allow",
+      "Action": ["cloudfront:GetDistribution", "cloudfront:GetInvalidation"],
+      "Resource": "arn:aws:cloudfront::277375108569:distribution/E3NPZS3FX3FUIT"
+    },
+    {
+      "Sid": "CloudFrontInvalidate",
+      "Effect": "Allow",
+      "Action": ["cloudfront:CreateInvalidation"],
+      "Resource": "*"
+    }
+  ]
+}

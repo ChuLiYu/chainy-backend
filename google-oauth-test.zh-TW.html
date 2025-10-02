@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google OAuth 測試</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+
+<body>
+    <h1>Google OAuth 2.0 測試</h1>
+
+    <div id="google-signin-status">
+        <p>Google Client ID: <span id="client-id-status">檢查中...</span></p>
+        <p>Google 腳本狀態: <span id="script-status">檢查中...</span></p>
+    </div>
+
+    <div id="g_id_onload" data-client_id="123456789-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com"
+        data-callback="handleCredentialResponse" data-auto_prompt="false">
+    </div>
+
+    <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with"
+        data-shape="rectangular" data-logo_alignment="left">
+    </div>
+
+    <div id="result" style="margin-top: 20px; padding: 10px; border: 1px solid #ccc;">
+        <h3>登錄結果:</h3>
+        <pre id="result-content">等待登錄...</pre>
+    </div>
+
+    <script>
+        const GOOGLE_CLIENT_ID = '123456789-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com';
+
+        // 檢查Google Client ID
+        document.getElementById('client-id-status').textContent = GOOGLE_CLIENT_ID ? '已設置' : '未設置';
+
+        // 檢查Google腳本
+        function checkGoogleScript() {
+            if (window.google && window.google.accounts) {
+                document.getElementById('script-status').textContent = '已加載';
+                console.log('Google OAuth script loaded successfully');
+            } else {
+                document.getElementById('script-status').textContent = '未加載';
+                console.log('Google OAuth script not loaded yet');
+                setTimeout(checkGoogleScript, 1000);
+            }
+        }
+
+        // 處理Google登錄回應
+        function handleCredentialResponse(response) {
+            console.log('Google login response:', response);
+            document.getElementById('result-content').textContent = JSON.stringify(response, null, 2);
+        }
+
+        // 初始化
+        window.onload = function () {
+            checkGoogleScript();
+
+            if (window.google && window.google.accounts) {
+                window.google.accounts.id.initialize({
+                    client_id: GOOGLE_CLIENT_ID,
+                    callback: handleCredentialResponse,
+                    auto_select: false,
+                    cancel_on_tap_outside: true
+                });
+            }
+        };
+    </script>
+</body>
+
+</html>
