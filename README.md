@@ -223,6 +223,9 @@ For issues and questions:
 - [DNS and CloudFront Migration](docs/DNS_CLOUDFRONT_MIGRATION.md)
 - [Troubleshooting Guides](docs/troubleshooting/)
 - [Security Implementation](docs/security-audit-report.md)
+- [Troubleshooting Solutions](docs/TROUBLESHOOTING_SOLUTIONS.md)
+- [Security Best Practices](docs/SECURITY_BEST_PRACTICES.md)
+- [Deployment Guide](docs/DEPLOYMENT_GUIDE.md)
 
 ## 🔄 Recent Updates
 
