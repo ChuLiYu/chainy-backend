@@ -1,17 +1,20 @@
 # Deployment Guide
 
 ## Overview
+
 This guide provides step-by-step instructions for deploying the chainy short URL service, with all sensitive information removed or replaced with placeholders.
 
 ## Prerequisites
 
 ### Required Tools
+
 - AWS CLI configured with appropriate permissions
 - Terraform >= 1.0
 - Node.js >= 18
 - npm or yarn
 
 ### AWS Resources Required
+
 - S3 bucket for static website hosting
 - DynamoDB tables for links and users
 - Lambda functions for API logic
@@ -23,6 +26,7 @@ This guide provides step-by-step instructions for deploying the chainy short URL
 ## 1. Environment Setup
 
 ### AWS CLI Configuration
+
 ```bash
 aws configure
 # Enter your AWS Access Key ID
@@ -32,6 +36,7 @@ aws configure
 ```
 
 ### Terraform Backend Configuration
+
 ```hcl
 # backend.tf
 terraform {
@@ -46,6 +51,7 @@ terraform {
 ## 2. Configuration Files
 
 ### Terraform Variables
+
 ```hcl
 # terraform.tfvars
 project = "chainy"
@@ -78,6 +84,7 @@ log_level = "INFO"
 ```
 
 ### Environment Variables
+
 ```bash
 # For local development
 export AWS_REGION=ap-northeast-1
@@ -89,6 +96,7 @@ export GOOGLE_CLIENT_SECRET=your-google-client-secret
 ## 3. Secrets Management
 
 ### AWS Systems Manager Parameter Store
+
 ```bash
 # Store Google client secret
 aws ssm put-parameter \
@@ -106,15 +114,13 @@ aws ssm put-parameter \
 ```
 
 ### IAM Permissions for SSM
+
 ```json
 {
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Action": [
-        "ssm:GetParameter",
-        "ssm:GetParameters"
-      ],
+      "Action": ["ssm:GetParameter", "ssm:GetParameters"],
       "Effect": "Allow",
       "Resource": [
         "arn:aws:ssm:ap-northeast-1:account-id:parameter/chainy/prod/jwt-secret",
@@ -128,22 +134,26 @@ aws ssm put-parameter \
 ## 4. Infrastructure Deployment
 
 ### Initialize Terraform
+
 ```bash
 cd /path/to/chainy
 terraform init
 ```
 
 ### Plan Deployment
+
 ```bash
 terraform plan -var-file="terraform.tfvars"
 ```
 
 ### Apply Infrastructure
+
 ```bash
 terraform apply -var-file="terraform.tfvars"
 ```
 
 ### Import Existing Resources (if needed)
+
 ```bash
 # Import existing S3 bucket
 terraform import 'module.web[0].aws_s3_bucket.web' chainy-prod-web
@@ -155,12 +165,14 @@ terraform import 'module.web[0].aws_cloudfront_distribution.web' DISTRIBUTION_ID
 ## 5. Application Deployment
 
 ### Build Lambda Functions
+
 ```bash
 npm install
 npm run package
 ```
 
 ### Deploy Lambda Functions
+
 ```bash
 # Deploy create function
 cd dist/create
@@ -194,6 +206,7 @@ aws lambda update-function-code \
 ## 6. Frontend Deployment
 
 ### Build Frontend
+
 ```bash
 cd /path/to/chainy-web
 npm install
@@ -201,6 +214,7 @@ npm run build
 ```
 
 ### Deploy to S3
+
 ```bash
 aws s3 sync dist/ s3://chainy-prod-web --delete
 ```
@@ -208,6 +222,7 @@ aws s3 sync dist/ s3://chainy-prod-web --delete
 ## 7. DNS Configuration
 
 ### Route 53 Configuration
+
 ```bash
 # Create CNAME record for chainy.luichu.dev
 aws route53 change-resource-record-sets \
@@ -226,6 +241,7 @@ aws route53 change-resource-record-sets \
 ```
 
 ### Cloudflare Configuration (if using)
+
 1. Add CNAME record: `chainy.luichu.dev` → `d3hdtwr5zmjki6.cloudfront.net`
 2. Enable proxy (orange cloud)
 3. Set SSL/TLS encryption mode to "Full"
@@ -233,6 +249,7 @@ aws route53 change-resource-record-sets \
 ## 8. CloudFront Configuration
 
 ### Update Distribution
+
 ```bash
 # Get current distribution config
 aws cloudfront get-distribution-config --id DISTRIBUTION_ID > current-config.json
@@ -245,6 +262,7 @@ aws cloudfront update-distribution \
 ```
 
 ### Cache Invalidation
+
 ```bash
 aws cloudfront create-invalidation \
   --distribution-id DISTRIBUTION_ID \
@@ -254,6 +272,7 @@ aws cloudfront create-invalidation \
 ## 9. Testing and Validation
 
 ### API Endpoints Testing
+
 ```bash
 # Test short link creation
 curl -X POST "https://chainy.luichu.dev/links" \
@@ -269,6 +288,7 @@ curl -X GET "https://chainy.luichu.dev/links" \
 ```
 
 ### Google OAuth Testing
+
 ```bash
 # Test Google OAuth endpoint
 curl -X POST "https://chainy.luichu.dev/auth/google" \
@@ -279,6 +299,7 @@ curl -X POST "https://chainy.luichu.dev/auth/google" \
 ## 10. Monitoring and Logging
 
 ### CloudWatch Logs
+
 ```bash
 # View Lambda function logs
 aws logs describe-log-groups --log-group-name-prefix "/aws/lambda/chainy-prod"
@@ -288,6 +309,7 @@ aws logs tail "/aws/lambda/chainy-prod-chainy-create" --follow
 ```
 
 ### CloudWatch Metrics
+
 ```bash
 # Get CloudWatch metrics
 aws cloudwatch get-metric-statistics \
@@ -305,6 +327,7 @@ aws cloudwatch get-metric-statistics \
 ### Common Issues
 
 #### Lambda Function Errors
+
 ```bash
 # Check function configuration
 aws lambda get-function --function-name chainy-prod-chainy-create
@@ -316,6 +339,7 @@ aws logs filter-log-events \
 ```
 
 #### DynamoDB Issues
+
 ```bash
 # Check table status
 aws dynamodb describe-table --table-name chainy-prod-chainy-links
@@ -325,6 +349,7 @@ aws dynamodb scan --table-name chainy-prod-chainy-links --limit 10
 ```
 
 #### CloudFront Issues
+
 ```bash
 # Check distribution status
 aws cloudfront get-distribution --id DISTRIBUTION_ID
@@ -336,6 +361,7 @@ aws cloudfront get-distribution-config --id DISTRIBUTION_ID
 ## 12. Rollback Procedures
 
 ### Rollback Lambda Functions
+
 ```bash
 # List function versions
 aws lambda list-versions-by-function --function-name chainy-prod-chainy-create
@@ -348,6 +374,7 @@ aws lambda update-alias \
 ```
 
 ### Rollback Infrastructure
+
 ```bash
 # Rollback Terraform changes
 terraform plan -var-file="terraform.tfvars" -destroy
@@ -357,6 +384,7 @@ terraform apply -var-file="terraform.tfvars" -destroy
 ## 13. Maintenance and Updates
 
 ### Regular Maintenance Tasks
+
 1. Update Lambda function code
 2. Rotate secrets and certificates
 3. Monitor performance and costs
@@ -364,6 +392,7 @@ terraform apply -var-file="terraform.tfvars" -destroy
 5. Review and update security policies
 
 ### Backup Procedures
+
 ```bash
 # Backup DynamoDB table
 aws dynamodb create-backup \
@@ -377,18 +406,21 @@ aws s3 sync s3://chainy-prod-web s3://chainy-prod-web-backup
 ## 14. Security Considerations
 
 ### Access Control
+
 - Use IAM roles with minimal permissions
 - Enable MFA for administrative access
 - Regularly rotate access keys
 - Monitor access logs
 
 ### Data Protection
+
 - Enable encryption at rest and in transit
 - Use secure parameter storage
 - Implement proper backup procedures
 - Follow data retention policies
 
 ### Network Security
+
 - Use VPC endpoints where possible
 - Implement proper security groups
 - Enable WAF protection
