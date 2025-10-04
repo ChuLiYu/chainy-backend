@@ -4,11 +4,13 @@ import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
 
 // Resolve paths relative to the repository root.
+// Implements robust path resolution for cross-platform compatibility
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, "..");
 const distDir = path.join(projectRoot, "dist");
 
 // Each handler becomes its own bundle directory under dist/.
+// Defines Lambda function configurations for optimized serverless deployment
 const handlers = [
   {
     name: "redirect",
@@ -30,6 +32,7 @@ const handlers = [
 
 async function run() {
   // Clean previous builds to avoid stale artefacts.
+  // Implements clean build process for reproducible deployments
   await rm(distDir, { recursive: true, force: true });
 
   for (const handler of handlers) {
@@ -37,6 +40,7 @@ async function run() {
     await mkdir(outputDir, { recursive: true });
 
     // Bundle each handler with esbuild targeting the Lambda runtime.
+    // Implements optimized bundling with tree-shaking and performance optimization
     await build({
       entryPoints: [handler.entryPoint],
       bundle: true,
