@@ -11,6 +11,7 @@ A production-ready, scalable URL shortener service built with **AWS Serverless A
 ## 🏆 Technical Excellence Highlights
 
 ### 🚀 **AWS Serverless Architecture**
+
 - **Lambda Functions**: TypeScript-based microservices with cold start optimization
 - **API Gateway**: RESTful API with custom authorizers and rate limiting
 - **DynamoDB**: NoSQL database with optimized queries and global secondary indexes
@@ -18,6 +19,7 @@ A production-ready, scalable URL shortener service built with **AWS Serverless A
 - **CloudWatch**: Comprehensive monitoring, logging, and alerting
 
 ### 🔒 **Enterprise Security Implementation**
+
 - **WAF Integration**: Web Application Firewall with custom rules
 - **JWT Authentication**: Secure token-based authentication with Google OAuth 2.0
 - **SSM Parameter Store**: Encrypted secrets management
@@ -25,6 +27,7 @@ A production-ready, scalable URL shortener service built with **AWS Serverless A
 - **CORS Protection**: Configured for specific origins
 
 ### 💰 **Cost Optimization & Performance**
+
 - **Lambda Optimization**: Connection pooling, memory tuning, and cold start mitigation
 - **DynamoDB Efficiency**: On-demand billing with optimized query patterns
 - **CloudFront Caching**: Reduced origin requests by 90%
@@ -35,7 +38,7 @@ A production-ready, scalable URL shortener service built with **AWS Serverless A
 
 ### Try It Now
 
-Visit the live application: **[https://chainy.luichu.dev](https://chainy.luichu.dev)**
+Visit the live application: **[https://your-domain.com](https://your-domain.com)**
 
 ### Local Development
 
@@ -70,21 +73,22 @@ terraform apply
 ## 🏗️ AWS Architecture Deep Dive
 
 ### **High-Level Architecture**
+
 ```mermaid
 graph TB
     User[👤 Users] --> CF[🌍 CloudFront CDN]
     CF --> S3[📦 S3 Static Hosting]
     CF --> API[🚪 API Gateway]
-    
+
     API --> Auth[🔐 Lambda Authorizer]
     API --> WAF[🛡️ AWS WAF]
     API --> Lambda[⚡ Lambda Functions]
-    
+
     Lambda --> DB[(🗄️ DynamoDB)]
     Lambda --> SSM[🔑 SSM Parameter Store]
     Lambda --> S3Events[📊 S3 Events Bucket]
     Lambda --> CW[📈 CloudWatch]
-    
+
     Auth --> Google[🔗 Google OAuth 2.0]
     WAF --> Rules[📋 Custom Security Rules]
 ```
@@ -92,7 +96,8 @@ graph TB
 ### **Detailed AWS Services Implementation**
 
 #### **🚀 Compute Layer**
-- **AWS Lambda**: 
+
+- **AWS Lambda**:
   - TypeScript-based microservices architecture
   - Custom authorizer for JWT validation
   - Cold start optimization with connection pooling
@@ -100,6 +105,7 @@ graph TB
   - Environment-specific deployments
 
 #### **🗄️ Data Layer**
+
 - **DynamoDB**:
   - Single-table design with GSI optimization
   - On-demand billing for cost efficiency
@@ -108,6 +114,7 @@ graph TB
   - Optimized query patterns for sub-100ms response times
 
 #### **🌐 Network & CDN**
+
 - **CloudFront**:
   - Global edge locations for <50ms latency
   - Custom SSL certificates via ACM
@@ -120,6 +127,7 @@ graph TB
   - CORS configuration for security
 
 #### **🔒 Security & Compliance**
+
 - **AWS WAF**:
   - Custom rules for SQL injection prevention
   - Rate limiting (2000 requests/5min)
@@ -135,6 +143,7 @@ graph TB
   - Cross-region parameter replication
 
 #### **📊 Monitoring & Operations**
+
 - **CloudWatch**:
   - Custom metrics and dashboards
   - Log aggregation and analysis
@@ -148,6 +157,7 @@ graph TB
 ## 🎯 Technical Achievements & Solutions
 
 ### **🏗️ Infrastructure as Code (Terraform)**
+
 - **Modular Architecture**: Reusable Terraform modules for scalability
 - **Environment Management**: Multi-environment deployments (dev/staging/prod)
 - **State Management**: Remote state with DynamoDB locking
@@ -155,7 +165,8 @@ graph TB
 - **Security Hardening**: Automated security configurations
 
 ### **⚡ Performance Optimization**
-- **Lambda Cold Start Mitigation**: 
+
+- **Lambda Cold Start Mitigation**:
   - Connection pooling implementation
   - Memory optimization (reduced cold starts by 60%)
   - Provisioned concurrency for critical functions
@@ -169,7 +180,8 @@ graph TB
   - Reduced origin requests by 90%
 
 ### **🔒 Security Implementation**
-- **Zero-Trust Architecture**: 
+
+- **Zero-Trust Architecture**:
   - JWT-based authentication with custom authorizers
   - API Gateway integration with WAF
   - Encrypted secrets management via SSM
@@ -179,12 +191,14 @@ graph TB
   - Automated threat detection
 
 ### **💰 Cost Optimization**
+
 - **Serverless Architecture**: Pay-per-use model reducing costs by 80%
 - **Resource Right-sizing**: Optimized Lambda memory and DynamoDB capacity
 - **Automated Cleanup**: S3 lifecycle policies and CloudWatch log retention
 - **Budget Controls**: Real-time monitoring with automated alerts
 
 ### **📈 Scalability & Reliability**
+
 - **Auto-scaling**: Lambda and DynamoDB auto-scaling capabilities
 - **High Availability**: Multi-AZ deployment with failover mechanisms
 - **Disaster Recovery**: Point-in-time recovery and cross-region replication
@@ -193,21 +207,23 @@ graph TB
 ## 🏅 AWS Skills Demonstrated
 
 ### **Core AWS Services Expertise**
-| Service | Implementation | Skills Demonstrated |
-|---------|---------------|-------------------|
-| **Lambda** | TypeScript microservices | Serverless architecture, cold start optimization |
-| **API Gateway** | HTTP API with custom domain | RESTful API design, rate limiting, CORS |
-| **DynamoDB** | Single-table design | NoSQL modeling, GSI optimization, performance tuning |
-| **CloudFront** | Global CDN | Edge caching, SSL/TLS, custom domains |
-| **S3** | Static hosting + events | Object storage, lifecycle policies, event-driven architecture |
-| **CloudWatch** | Monitoring & logging | Metrics, dashboards, alerting, log analysis |
-| **WAF** | Web Application Firewall | Security rules, DDoS protection, bot mitigation |
-| **IAM** | Identity & Access Management | Role-based access, least privilege, cross-service permissions |
-| **SSM** | Systems Manager | Parameter store, secrets management, configuration |
-| **ACM** | Certificate Manager | SSL/TLS certificates, domain validation |
-| **SNS** | Simple Notification Service | Alerting, notifications, event publishing |
+
+| Service         | Implementation               | Skills Demonstrated                                           |
+| --------------- | ---------------------------- | ------------------------------------------------------------- |
+| **Lambda**      | TypeScript microservices     | Serverless architecture, cold start optimization              |
+| **API Gateway** | HTTP API with custom domain  | RESTful API design, rate limiting, CORS                       |
+| **DynamoDB**    | Single-table design          | NoSQL modeling, GSI optimization, performance tuning          |
+| **CloudFront**  | Global CDN                   | Edge caching, SSL/TLS, custom domains                         |
+| **S3**          | Static hosting + events      | Object storage, lifecycle policies, event-driven architecture |
+| **CloudWatch**  | Monitoring & logging         | Metrics, dashboards, alerting, log analysis                   |
+| **WAF**         | Web Application Firewall     | Security rules, DDoS protection, bot mitigation               |
+| **IAM**         | Identity & Access Management | Role-based access, least privilege, cross-service permissions |
+| **SSM**         | Systems Manager              | Parameter store, secrets management, configuration            |
+| **ACM**         | Certificate Manager          | SSL/TLS certificates, domain validation                       |
+| **SNS**         | Simple Notification Service  | Alerting, notifications, event publishing                     |
 
 ### **Advanced AWS Concepts**
+
 - **🏗️ Infrastructure as Code**: Terraform modules, state management, environment isolation
 - **🔒 Security Best Practices**: Zero-trust architecture, encryption at rest/transit
 - **📊 Observability**: Custom metrics, distributed tracing, performance monitoring
@@ -216,6 +232,7 @@ graph TB
 - **🌐 Global Architecture**: Multi-region deployment, edge computing, CDN optimization
 
 ### **Production Readiness**
+
 - **High Availability**: Multi-AZ deployment, failover mechanisms
 - **Scalability**: Auto-scaling, load balancing, performance optimization
 - **Security**: Enterprise-grade security implementation
@@ -285,7 +302,7 @@ config/                    # Environment configuration
 The system supports multiple environments with different configurations:
 
 - **Development**: `http://localhost:3000`
-- **Production**: `https://chainy.luichu.dev`
+- **Production**: `https://your-domain.com`
 
 ### Google OAuth Setup
 
@@ -294,7 +311,7 @@ The system supports multiple environments with different configurations:
 3. Create OAuth 2.0 credentials
 4. Configure authorized redirect URIs:
    - Development: `http://localhost:3000`
-   - Production: `https://chainy.luichu.dev`
+   - Production: `https://your-domain.com`
 
 ## 🚀 Deployment
 
@@ -356,7 +373,7 @@ npm run test:e2e
 
 ### Web Interface
 
-1. Visit [https://chainy.luichu.dev](https://chainy.luichu.dev)
+1. Visit [https://your-domain.com](https://your-domain.com)
 2. Sign in with Google
 3. Create short URLs with custom codes
 4. Manage your links with notes and analytics
@@ -366,7 +383,7 @@ npm run test:e2e
 **Create a short URL:**
 
 ```bash
-curl -X POST "https://chainy.luichu.dev/links" \
+curl -X POST "https://your-domain.com/links" \
   -H "Authorization: Bearer <jwt_token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -382,7 +399,7 @@ curl -X POST "https://chainy.luichu.dev/links" \
 {
   "code": "my-link",
   "target": "https://example.com",
-  "short_url": "https://chainy.luichu.dev/my-link",
+  "short_url": "https://your-domain.com/my-link",
   "note": "Important documentation",
   "created_at": "2025-10-03T10:00:00.000Z",
   "clicks": 0,
@@ -429,7 +446,7 @@ POST /links
 {
   "code": "custom-code",
   "target": "https://example.com",
-  "short_url": "https://chainy.luichu.dev/custom-code",
+  "short_url": "https://your-domain.com/custom-code",
   "note": "My important link",
   "created_at": "2025-10-02T03:00:00.000Z",
   "clicks": 0,

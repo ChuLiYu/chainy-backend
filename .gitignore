@@ -146,6 +146,11 @@ aws-trust-policy*.json
 trust-policy*.json
 deploy-policy*.json
 
+# CloudFront and deployment configs with sensitive data
+current-cloudfront-config*.json
+monitor-cloudfront-deployment*.sh
+distribution-config*.json
+
 # Backup files
 *.backup
 *.bak
