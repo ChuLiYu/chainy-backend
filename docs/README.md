@@ -43,16 +43,13 @@ This directory contains comprehensive documentation for the Chainy URL shortener
 - **LANGUAGE_STANDARDIZATION_REPORT.md** - Language standardization summary
 - **README_OPTIMIZATION_REPORT.md** - README improvement report
 
-### Project Structure
-- **INDEPENDENT_WORKFLOWS.md** - Independent workflow documentation
-- **PROJECT_README.md** - Project overview and structure
-- **PROJECT_STRUCTURE.md** - Detailed project architecture
-- **WORKFLOW_STRUCTURE.md** - Workflow organization guide
+### Project Overview
+- **PROJECT_SUMMARY.md** - Comprehensive project summary and achievements
 
 ## 🚀 Quick Start
 
 1. **New to the project?** Start with:
-   - `PROJECT_README.md` - Project overview
+   - `PROJECT_SUMMARY.md` - Comprehensive project overview
    - `SETUP_INSTRUCTIONS.md` - Initial setup
 
 2. **Setting up AWS?** Check:
