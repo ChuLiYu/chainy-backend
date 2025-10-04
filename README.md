@@ -2,33 +2,73 @@
 
 A modern, secure, and scalable URL shortener service built with AWS serverless architecture.
 
-## 🚀 Features
+[![Deployment Status](https://img.shields.io/badge/deployment-production-green)](https://chainy.luichu.dev)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![AWS](https://img.shields.io/badge/AWS-Serverless-orange)](https://aws.amazon.com)
 
-- **Secure Authentication**: Google OAuth 2.0 integration with JWT tokens
-- **Custom Short Codes**: Authenticated users can create custom short codes
-- **Note/Title Support**: Add memorable titles to your short URLs
-- **Link Management**: View, pin, and delete your short URLs
-- **Analytics**: Track click counts and usage statistics
-- **Multi-language Support**: English and Chinese interfaces
-- **Production Ready**: Fully deployed on AWS with cost optimization
+## 🚀 Quick Start
+
+### Try It Now
+Visit the live application: **[https://chainy.luichu.dev](https://chainy.luichu.dev)**
+
+### Local Development
+```bash
+# Clone the repository
+git clone https://github.com/your-username/chainy.git
+cd chainy
+
+# Start frontend development server
+cd chainy-web
+npm install
+npm run dev
+# Open http://localhost:5173
+
+# Deploy backend (requires AWS credentials)
+cd ../chainy
+npm install
+npm run package
+terraform apply
+```
+
+## ✨ Features
+
+- **🔐 Secure Authentication**: Google OAuth 2.0 with JWT tokens
+- **🎯 Custom Short Codes**: Create memorable short URLs
+- **📝 Smart Notes**: Add titles and descriptions to your links
+- **📊 Analytics**: Track clicks and usage statistics
+- **📌 Link Management**: Pin, organize, and delete your URLs
+- **🌍 Multi-language**: English and Chinese interfaces
+- **⚡ Production Ready**: Fully deployed on AWS with cost optimization
 
 ## 🏗️ Architecture
 
-- **Frontend**: React + Vite, deployed on S3 + CloudFront
-- **Backend**: AWS Lambda functions with TypeScript
-- **Database**: DynamoDB for link storage
+```mermaid
+graph TB
+    User[👤 User] --> Frontend[🌐 React Frontend]
+    Frontend --> API[🚪 API Gateway]
+    API --> Auth[🔐 Google OAuth]
+    API --> Lambda[⚡ Lambda Functions]
+    Lambda --> DB[(🗄️ DynamoDB)]
+    Lambda --> S3[📦 S3 Events]
+    Lambda --> CW[📊 CloudWatch]
+```
+
+**Tech Stack**:
+- **Frontend**: React 18 + Vite + Tailwind CSS
+- **Backend**: AWS Lambda + TypeScript
+- **Database**: DynamoDB (NoSQL)
 - **Authentication**: Google OAuth 2.0 + JWT
-- **API Gateway**: RESTful API with CORS support
-- **Security**: WAF protection and rate limiting
+- **CDN**: CloudFront + S3
+- **Security**: WAF + Rate Limiting
 
 ## 🛠️ Development Setup
 
 ### Prerequisites
 
-- Node.js 18+
-- AWS CLI configured
-- Terraform 1.0+
-- Google Cloud Console project
+- **Node.js 18+** - JavaScript runtime
+- **AWS CLI** - Configured with appropriate credentials
+- **Terraform 1.0+** - Infrastructure as code
+- **Google Cloud Console** - For OAuth setup
 
 ### Environment Configuration
 
@@ -149,6 +189,41 @@ npm test
 
 # E2E tests
 npm run test:e2e
+```
+
+## 📖 Usage Examples
+
+### Web Interface
+1. Visit [https://chainy.luichu.dev](https://chainy.luichu.dev)
+2. Sign in with Google
+3. Create short URLs with custom codes
+4. Manage your links with notes and analytics
+
+### API Usage
+
+**Create a short URL:**
+```bash
+curl -X POST "https://chainy.luichu.dev/links" \
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "target": "https://example.com",
+    "code": "my-link",
+    "note": "Important documentation"
+  }'
+```
+
+**Response:**
+```json
+{
+  "code": "my-link",
+  "target": "https://example.com",
+  "short_url": "https://chainy.luichu.dev/my-link",
+  "note": "Important documentation",
+  "created_at": "2025-10-03T10:00:00.000Z",
+  "clicks": 0,
+  "pinned": false
+}
 ```
 
 ## 📝 API Documentation

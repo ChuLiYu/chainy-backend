@@ -1,23 +1,26 @@
 # Language Standardization Guidelines
 
 ## Overview
+
 This document outlines the language standards for the Chainy project documentation to ensure consistency and clarity.
 
 ## Language Rules
 
-### English Documentation (_EN.md files)
+### English Documentation (\_EN.md files)
+
 - **Primary Language**: English only
 - **Code Examples**: Use English comments and variable names
 - **Technical Terms**: Use standard English technical terminology
 - **No Chinese**: Absolutely no Chinese characters in English documentation
 
-### Chinese Documentation (_ZH.md files)
+### Chinese Documentation (\_ZH.md files)
+
 - **Primary Language**: Traditional Chinese (繁體中文)
-- **Code Examples**: 
+- **Code Examples**:
   - Comments should be in Chinese
   - Variable names can remain in English (technical standards)
   - Commands and technical terms can remain in English
-- **Mixed Content Allowed**: 
+- **Mixed Content Allowed**:
   - Technical commands: `terraform apply`, `npm install`
   - Variable names: `google_client_id`, `api_endpoint`
   - URLs and technical identifiers
@@ -26,6 +29,7 @@ This document outlines the language standards for the Chainy project documentati
 ## Examples
 
 ### ✅ Correct Chinese Documentation
+
 ```bash
 # 初始化 Terraform（會下載新的 provider）
 terraform init
@@ -38,6 +42,7 @@ terraform plan
 ```
 
 ### ❌ Incorrect Chinese Documentation
+
 ```bash
 # Initialize Terraform (will download new provider)
 terraform init
@@ -47,6 +52,7 @@ terraform plan
 ```
 
 ### ✅ Correct English Documentation
+
 ```bash
 # Initialize Terraform (will download new provider)
 terraform init
@@ -61,16 +67,19 @@ terraform plan
 ## Implementation Plan
 
 ### Phase 1: Review Current State
+
 - [x] Identify mixed language content
 - [x] Document current issues
 - [ ] Create correction plan
 
 ### Phase 2: Fix Critical Files
+
 - [ ] Fix Chinese documentation with excessive English
 - [ ] Ensure English documentation is pure English
 - [ ] Update code examples and comments
 
 ### Phase 3: Establish Standards
+
 - [ ] Create templates for new documentation
 - [ ] Update contribution guidelines
 - [ ] Train team on language standards
@@ -78,12 +87,14 @@ terraform plan
 ## Files Requiring Attention
 
 ### Chinese Files with Excessive English
+
 1. `chainy/README-COST-OPTIMIZATION_ZH.md` - Many English comments
 2. `ENVIRONMENT_CONFIGURATION_GUIDE_ZH.md` - Mixed language
 3. `GOOGLE_OAUTH_FIX_GUIDE_ZH.md` - English technical terms
 4. `chainy/docs/security-deployment-guide_ZH.md` - Code examples
 
 ### English Files Status
+
 - ✅ All English files appear to be pure English
 - ✅ No Chinese characters found in English documentation
 
