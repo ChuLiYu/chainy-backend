@@ -8,6 +8,7 @@ import { documentClient, getTableName, ChainyLink } from "../lib/dynamo.js";
 import { putDomainEvent } from "../lib/events.js";
 
 // Standardized JSON response wrapper for error scenarios.
+// Ensures consistent error response format across all redirect failures
 function jsonResponse(statusCode: number, body: unknown): APIGatewayProxyResultV2 {
   return {
     statusCode,
@@ -20,12 +21,14 @@ function jsonResponse(statusCode: number, body: unknown): APIGatewayProxyResultV
 }
 
 // Normalise header lookups (APIGW may present lower/upper case keys).
+// Handles case-insensitive header access for consistent behavior across environments
 function headerLookup(event: APIGatewayProxyEventV2, name: string): string | undefined {
   const headers = event.headers ?? {};
   return headers[name] ?? headers[name.toLowerCase()];
 }
 
 // Collect metadata used for analytics (IP, geo, language, UA, etc.).
+// Extracts comprehensive click analytics data for business intelligence and fraud detection
 function extractRequestMetadata(event: APIGatewayProxyEventV2) {
   const headers = event.headers ?? {};
   const requestContext = event.requestContext;
@@ -119,6 +122,7 @@ function extractRequestMetadata(event: APIGatewayProxyEventV2) {
 }
 
 // Redirect handler: look up the destination, bump counters, emit analytics, return 301.
+// Core redirect logic with click tracking and analytics event emission
 export async function handler(
   event: APIGatewayProxyEventV2,
   context: Context,
@@ -128,6 +132,7 @@ export async function handler(
   const code = event.pathParameters?.code;
   
   // Handle root path - redirect to frontend
+  // Provides a landing page for users accessing the base domain
   if (!code || code === "" || code === "/") {
     const webDomain = process.env.WEB_DOMAIN;
     const webSubdomain = process.env.WEB_SUBDOMAIN || "chainy";
@@ -219,6 +224,7 @@ export async function handler(
     const tableName = getTableName();
 
     // Load the short link metadata from DynamoDB.
+    // Primary lookup to retrieve target URL and validate link existence
     const { Item } = await documentClient.send(
       new GetCommand({
         TableName: tableName,
@@ -325,6 +331,7 @@ export async function handler(
     const clickTimestamp = new Date().toISOString();
 
     // Increment click counters without interfering with the redirect response time.
+    // Uses atomic counter update to track click statistics accurately
     await documentClient.send(
       new UpdateCommand({
         TableName: tableName,
@@ -340,6 +347,7 @@ export async function handler(
     const requestMeta = extractRequestMetadata(event);
 
     // Fire-and-forget click analytics; errors are only logged.
+    // Analytics events are emitted asynchronously to maintain redirect performance
     void putDomainEvent({
       eventType: "link_click",
       code,

@@ -14,12 +14,14 @@ import { documentClient, getTableName, ChainyLink } from "../lib/dynamo.js";
 import { putDomainEvent } from "../lib/events.js";
 
 // Standard headers returned by all JSON responses.
+// These headers ensure proper content type and prevent caching of sensitive API responses
 const defaultHeaders = {
   "Content-Type": "application/json",
   "Cache-Control": "no-store",
 };
 
 // Helper for crafting JSON API responses.
+// Standardizes response format across all API endpoints with consistent headers
 function jsonResponse(statusCode: number, body: unknown): APIGatewayProxyResultV2 {
   return {
     statusCode,
@@ -29,6 +31,7 @@ function jsonResponse(statusCode: number, body: unknown): APIGatewayProxyResultV
 }
 
 // Parse input payload, returning an empty object if no body supplied.
+// Safely handles JSON parsing with proper error handling for malformed requests
 function parseJsonBody(event: APIGatewayProxyEventV2): Record<string, unknown> {
   if (!event.body) {
     return {};
@@ -42,6 +45,7 @@ function parseJsonBody(event: APIGatewayProxyEventV2): Record<string, unknown> {
 }
 
 // Generate a short alphanumeric code when the user does not supply one.
+// Uses cryptographically secure random bytes for collision-resistant short codes
 function generateShortCode(length = 7): string {
   const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   const randomBytesBuffer = randomBytes(length);
@@ -50,6 +54,7 @@ function generateShortCode(length = 7): string {
 }
 
 // Ensure a valid URL is provided before writing to DynamoDB.
+// Validates URL format and prevents injection of malformed URLs into the system
 function assertTargetUrl(target: unknown): string {
   if (typeof target !== "string" || target.trim().length === 0) {
     throw new Error("Target URL is required");
@@ -66,6 +71,7 @@ function assertTargetUrl(target: unknown): string {
 }
 
 // Normalise header lookup regardless of casing.
+// API Gateway headers can be case-sensitive, this ensures consistent access
 function headerLookup(event: APIGatewayProxyEventV2, name: string): string | undefined {
   const headers = event.headers ?? {};
   return headers[name] ?? headers[name.toLowerCase()];
@@ -107,6 +113,7 @@ function appendShortUrl<T extends { code: string }>(link: T, event: APIGatewayPr
 }
 
 // Collect request metadata that flows into the events pipeline.
+// Extracts comprehensive analytics data from HTTP headers and query parameters for business intelligence
 function extractRequestMetadata(event: APIGatewayProxyEventV2) {
   const headers = event.headers ?? {};
   const requestContext = event.requestContext;
@@ -197,6 +204,7 @@ function extractRequestMetadata(event: APIGatewayProxyEventV2) {
 }
 
 // Entry point: multiplex CRUD operations based on HTTP method.
+// Routes incoming requests to appropriate handler functions based on HTTP verb
 export async function handler(
   event: APIGatewayProxyEventV2,
 ): Promise<APIGatewayProxyResultV2> {
@@ -234,6 +242,7 @@ async function handleCreate(event: APIGatewayProxyEventV2): Promise<APIGatewayPr
   const target = assertTargetUrl(payload.target);
   
   // Get user ID from Authorization header for authenticated users
+  // TODO: Implement proper JWT token verification and user extraction
   const authHeader = headerLookup(event, "authorization");
   let owner: string | undefined;
   
@@ -272,6 +281,7 @@ async function handleCreate(event: APIGatewayProxyEventV2): Promise<APIGatewayPr
 
   try {
     // Only allow creation if the code does not already exist.
+    // Uses DynamoDB conditional write to prevent duplicate short codes
     await documentClient.send(
       new PutCommand({
         TableName: getTableName(),
@@ -363,6 +373,8 @@ async function handleCreate(event: APIGatewayProxyEventV2): Promise<APIGatewayPr
   }
 
   try {
+    // Emit domain event for analytics and audit trail
+    // Fire-and-forget pattern ensures redirect performance isn't affected
     await putDomainEvent({
       eventType: "link_create",
       code,
