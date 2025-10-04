@@ -1,4 +1,5 @@
 # Global input variables for the Chainy root module.
+# Defines all configurable parameters for infrastructure deployment and customization
 
 variable "project" {
   description = "Project identifier used for naming resources."
@@ -18,6 +19,7 @@ variable "region" {
 }
 
 # Paths to the Lambda build output that Terraform will package into zip files.
+# Configures deployment artifacts for serverless function packaging
 variable "redirect_build_dir" {
   description = "Relative or absolute path to the compiled redirect Lambda artifact directory (bundled Node.js files)."
   type        = string
@@ -31,6 +33,7 @@ variable "create_build_dir" {
 }
 
 # Operational tuning knobs for log storage and data retention.
+# Controls data lifecycle and storage costs for production environments
 variable "log_retention_in_days" {
   description = "CloudWatch Logs retention period for Lambda log groups."
   type        = number
@@ -44,6 +47,7 @@ variable "click_events_retention_days" {
 }
 
 # Allow callers to attach additional metadata tags to every resource.
+# Enables resource organization and cost allocation across environments
 variable "extra_tags" {
   description = "Additional resource tags merged with the defaults."
   type        = map(string)
@@ -111,6 +115,7 @@ variable "web_price_class" {
 
 # ============================================================================
 # Security Configuration
+# Implements enterprise-grade security controls and authentication mechanisms
 # ============================================================================
 
 variable "enable_authentication" {
@@ -146,6 +151,7 @@ variable "waf_blocked_countries" {
 
 # ============================================================================
 # Budget and Cost Control
+# Implements automated cost monitoring and budget enforcement mechanisms
 # ============================================================================
 
 variable "enable_budget_monitoring" {
@@ -174,6 +180,7 @@ variable "budget_alert_emails" {
 
 # ============================================================================
 # Google OAuth Configuration
+# Implements OAuth 2.0 authentication with PKCE for secure user management
 # ============================================================================
 
 variable "google_client_id" {

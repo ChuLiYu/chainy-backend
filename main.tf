@@ -1,4 +1,5 @@
 # Global tags and absolute paths derived once for reuse.
+# Centralizes configuration management and resource tagging for consistency
 locals {
   tags = merge({
     Project     = var.project
@@ -18,6 +19,7 @@ locals {
 }
 
 # Provision the DynamoDB table that stores short link metadata.
+# Implements single-table design with optimized query patterns for high performance
 module "db" {
   source      = "./modules/db"
   project     = var.project
@@ -26,6 +28,7 @@ module "db" {
 }
 
 # S3 bucket storing raw Chainy domain events for analytics.
+# Implements event-driven architecture with lifecycle policies for cost optimization
 module "events" {
   source         = "./modules/events"
   project        = var.project
@@ -35,6 +38,7 @@ module "events" {
 }
 
 # Security module: SSM parameters, WAF, and security configurations.
+# Implements enterprise-grade security controls including JWT secrets and API protection
 module "security" {
   source      = "./modules/security"
   project     = var.project
@@ -51,6 +55,7 @@ module "security" {
 }
 
 # Lambda Authorizer for JWT authentication (optional).
+# Implements custom authorization logic for API Gateway with token validation
 module "authorizer" {
   count  = var.enable_authentication ? 1 : 0
   source = "./modules/authorizer"
@@ -66,6 +71,7 @@ module "authorizer" {
 }
 
 # Google OAuth Authentication Lambda (optional).
+# Implements OAuth 2.0 flow with PKCE for secure user authentication
 module "google_auth" {
   count  = var.google_client_id != "" ? 1 : 0
   source = "./modules/auth"
@@ -84,6 +90,7 @@ module "google_auth" {
 }
 
 # Lambda functions for redirecting and managing links, plus IAM roles.
+# Implements serverless microservices architecture with optimized cold start performance
 module "lambda" {
   source      = "./modules/lambda"
   project     = var.project
@@ -109,6 +116,7 @@ module "lambda" {
 }
 
 # HTTP API Gateway exposing redirect and CRUD routes.
+# Implements RESTful API with custom domain support and authentication integration
 module "api" {
   source      = "./modules/api"
   project     = var.project
@@ -130,6 +138,8 @@ module "api" {
   google_auth_lambda_name = var.google_client_id != "" && length(module.google_auth) > 0 ? module.google_auth[0].function_name : ""
 }
 
+# Web frontend module with CloudFront CDN and S3 hosting
+# Implements global content delivery with SSL/TLS termination and custom domain support
 module "web" {
   count  = var.web_domain == null ? 0 : 1
   source = "./modules/web"
@@ -150,6 +160,7 @@ module "web" {
 }
 
 # Budget monitoring and cost control (optional).
+# Implements automated cost monitoring with SNS alerts and CloudWatch alarms
 module "budget" {
   count  = var.enable_budget_monitoring ? 1 : 0
   source = "./modules/budget"

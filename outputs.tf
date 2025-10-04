@@ -1,4 +1,5 @@
 # Key values surfaced after deployment for testing and integrations.
+# Provides essential endpoints and resource identifiers for application configuration
 
 output "api_endpoint" {
   description = "HTTP API base URL for invoking Chainy endpoints."
@@ -36,6 +37,7 @@ output "web_url" {
 }
 
 # Security outputs
+# Exposes security-related resource identifiers for monitoring and integration
 output "jwt_secret_parameter_name" {
   description = "SSM Parameter Store name containing JWT secret."
   value       = module.security.jwt_secret_parameter_name
