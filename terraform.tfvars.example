@@ -1,75 +1,31 @@
-# Environment name (dev, staging, prod)
-environment = "dev"
+# Google OAuth Configuration
+google_client_id = "YOUR_GOOGLE_CLIENT_ID_HERE"
+# google_client_secret = "GOCSPX-your_google_client_secret_here"  # 使用環境變數或 AWS SSM
+google_redirect_uri = "https://your-domain.com"
 
-# AWS region for resources
-region = "ap-northeast-1"
+# AWS Configuration
+aws_region  = "ap-northeast-1"
+environment = "prod"
 
-# Lambda environment variables (optional additions beyond defaults)
-lambda_additional_environment = {}
+# Domain Configuration
+domain   = "your-domain.com"
+protocol = "https"
 
-# Optional: Configure front-end hosting (CloudFront + S3). Leave commented to skip.
-# web_domain         = "example.com"
-# web_subdomain      = "chainy"
-# web_hosted_zone_id = "Z1234567890ABCDEFG" # Route 53 hosted zone ID for the domain
-# web_price_class    = "PriceClass_100"
+# Web Domain Configuration
+web_domain         = "your-domain.com"
+web_subdomain      = "chainy"
+web_hosted_zone_id = "YOUR_ROUTE53_ZONE_ID"
 
-# SSM parameter names for hashing salts
-hash_salt_parameter_name    = "/chainy/dev/hash-salt"
-ip_hash_salt_parameter_name = "/chainy/dev/ip-hash-salt"
+# Database Configuration
+dynamodb_table_name = "chainy-prod-chainy-links"
+users_table_name    = "chainy-prod-chainy-users"
+users_table_arn     = "arn:aws:dynamodb:ap-northeast-1:YOUR_ACCOUNT_ID:table/chainy-prod-chainy-users"
 
-# Fallback values for SSM parameters (used if SSM fails)
-hash_salt_fallback    = "fallback-hash-salt-change-me"
-ip_hash_salt_fallback = "fallback-ip-salt-change-me"
+# Security Configuration
+jwt_secret_parameter_name = "/chainy/prod/jwt-secret"
+waf_enabled               = false
 
-# Optional: Override build directories
-# redirect_build_dir = "dist/redirect"
-# create_build_dir  = "dist/create"
-
-# Optional: Additional tags for all resources
-extra_tags = {
-  Project     = "chainy"
-  Environment = "dev"
-  ManagedBy   = "terraform"
-}
-
-# ============================================================================
-# Security Configuration (Optional)
-# ============================================================================
-
-# Enable JWT authentication for API endpoints
-# Set to true to require authentication for creating/updating/deleting links
-# enable_authentication = true
-
-# JWT secret for signing tokens (leave empty to auto-generate)
-# In production, use a strong random secret
-# jwt_secret = "your-super-secret-key-here"
-
-# Enable AWS WAF for API Gateway protection
-# Provides rate limiting, SQL injection protection, and more
-# enable_waf = true
-
-# WAF rate limiting: maximum requests per IP per 5 minutes
-# waf_rate_limit_per_5min = 2000
-
-# Block specific countries (ISO 3166-1 alpha-2 codes)
-# Example: ["CN", "RU"] to block China and Russia
-# waf_blocked_countries = []
-
-# ============================================================================
-# Budget and Cost Control (Optional but Recommended)
-# ============================================================================
-
-# Enable AWS Budgets monitoring
-# First 2 budgets are FREE!
-# enable_budget_monitoring = true
-
-# Set your monthly budget limit (receives alerts at 80% and 100%)
-# monthly_budget_limit = 20  # $20/month
-
-# Daily cost threshold for CloudWatch alarms
-# daily_cost_threshold = 2   # $2/day
-
-# Email addresses for budget alerts
-# budget_alert_emails = ["your-email@example.com"]
-
-# 💡 Tip: Start with a conservative budget, you can always increase it later!
+# Cost Optimization
+cost_optimization = false
+debug_mode        = false
+log_level         = "INFO"
