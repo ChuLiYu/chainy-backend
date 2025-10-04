@@ -476,11 +476,11 @@ For issues and questions:
 
 ## 📚 Documentation
 
-- [DNS and CloudFront Migration](docs/DNS_CLOUDFRONT_MIGRATION.md)
-- [Troubleshooting Guides](docs/troubleshooting/)
-- [Security Implementation](docs/security-audit-report.md)
-- [Troubleshooting Solutions](docs/TROUBLESHOOTING_SOLUTIONS.md)
-- [Security Best Practices](docs/SECURITY_BEST_PRACTICES.md)
+- [📖 Documentation Index](docs/README.md) - Complete documentation guide
+- [🏗️ AWS Architecture](docs/aws/) - Cloud architecture and IAM setup
+- [🔒 Security Guides](docs/security/) - Security implementation and audit
+- [🚀 Deployment](docs/deployment/) - Production deployment guides
+- [📋 Setup Guides](docs/guides/) - Configuration and troubleshooting
 - [Deployment Guide](docs/DEPLOYMENT_GUIDE.md)
 
 ## 🔄 Recent Updates
