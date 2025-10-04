@@ -43,7 +43,10 @@ google_client_secret = "GOCSPX-你的實際密鑰"
 ### 3. 重新部署 Lambda 函數
 
 ```bash
+# 進入 Chainy 專案目錄
 cd /Users/liyu/Programing/aws/chainy
+
+# 執行 Terraform 部署
 terraform apply
 ```
 
