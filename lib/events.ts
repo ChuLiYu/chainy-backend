@@ -8,10 +8,12 @@ const UTM_FIELDS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "
 const MAX_TAGS = 10;
 
 // Cache for SSM parameters to avoid repeated calls
+// Implements secure caching with TTL to minimize AWS API calls and improve performance
 const parameterCache = new Map<string, { value: string; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache TTL
 
 // Get parameter from SSM Parameter Store with caching
+// Implements secure parameter retrieval with automatic decryption and error handling
 async function getParameterFromSSM(parameterName: string): Promise<string> {
   // Check cache first
   const cached = parameterCache.get(parameterName);
@@ -45,6 +47,7 @@ async function getParameterFromSSM(parameterName: string): Promise<string> {
 }
 
 // Get hash salts from SSM Parameter Store with fallback
+// Implements secure salt management with environment variable fallback for resilience
 async function getHashSalts(): Promise<{ hashSalt: string; ipHashSalt: string }> {
   const hashSaltParam = process.env.CHAINY_HASH_SALT_PARAM;
   const ipHashSaltParam = process.env.CHAINY_IP_HASH_SALT_PARAM;
@@ -84,6 +87,7 @@ async function getHashSalts(): Promise<{ hashSalt: string; ipHashSalt: string }>
 }
 
 // Resolve events bucket injected through Lambda environment variables.
+// Provides centralized bucket name resolution for event storage
 function getEventsBucketName(): string {
   const bucket = process.env.CHAINY_EVENTS_BUCKET_NAME;
 
@@ -101,6 +105,7 @@ export interface PutEventParams {
 }
 
 // Partition events by type/date/hour for downstream analytics queries.
+// Implements efficient partitioning strategy for Athena/Glue analytics processing
 export function buildObjectKey(eventType: string, code: string, timestamp: Date): string {
   const iso = timestamp.toISOString();
   const [datePart, timePart] = iso.split("T");
@@ -209,6 +214,7 @@ function toNumber(value: unknown, precision = 8): number | undefined {
 }
 
 // Remove or coarsen sensitive values before persisting the event record.
+// Implements privacy-preserving data sanitization with cryptographic hashing
 function sanitizeDetail(
   detail: Record<string, unknown>,
   hashSalt: string,
@@ -374,6 +380,7 @@ export async function putDomainEvent(
   const key = buildObjectKey(eventType, code, timestamp);
   
   // Get hash salts from SSM Parameter Store
+  // Implements secure event emission with privacy-preserving data sanitization
   const { hashSalt, ipHashSalt } = await getHashSalts();
   const sanitizedDetail = sanitizeDetail(detail, hashSalt, ipHashSalt);
 
