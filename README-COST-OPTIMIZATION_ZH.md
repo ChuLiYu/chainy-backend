@@ -33,7 +33,7 @@ CloudWatch (1天, $0.30)
 ### 步驟 1：複製配置文件
 
 ```bash
-# 複製極致省錢配置
+# 複製極致省錢配置檔案
 cp terraform.tfvars.cost-optimized terraform.tfvars
 ```
 
@@ -42,7 +42,7 @@ cp terraform.tfvars.cost-optimized terraform.tfvars
 ```bash
 # 使用您喜歡的編輯器
 vi terraform.tfvars
-# 或
+# 或者使用
 code terraform.tfvars
 ```
 
@@ -67,13 +67,13 @@ web_hosted_zone_id = "YOUR_ROUTE53_ZONE_ID"
 ### 步驟 3：部署
 
 ```bash
-# 初始化（如果還沒有）
+# 初始化 Terraform（如果還沒有執行過）
 terraform init
 
-# 查看計劃
+# 查看部署計劃
 terraform plan
 
-# 部署！
+# 執行部署
 terraform apply
 ```
 
