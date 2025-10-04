@@ -9,12 +9,14 @@ import { SSMClient, GetParameterCommand } from "@aws-sdk/client-ssm";
 const ssmClient = new SSMClient({});
 
 // Cache the JWT secret to reduce SSM calls
+// Implements secure caching with TTL to minimize AWS API calls while maintaining security
 let cachedSecret: string | null = null;
 let secretCacheTime: number = 0;
 const SECRET_CACHE_TTL = 300000; // 5 minutes
 
 /**
  * Retrieve JWT secret from SSM Parameter Store with caching
+ * Implements secure secret management with performance optimization
  */
 async function getJwtSecret(): Promise<string> {
   const now = Date.now();
@@ -50,6 +52,7 @@ async function getJwtSecret(): Promise<string> {
 
 /**
  * Generate IAM policy document for API Gateway v2
+ * Creates proper IAM policies for API Gateway authorization with user context
  */
 function generatePolicy(
   principalId: string,
@@ -79,6 +82,7 @@ function generatePolicy(
 
 /**
  * Extract token from Authorization header
+ * Handles both Bearer token format and raw token formats for flexibility
  */
 function extractToken(authorizationHeader?: string): string | null {
   if (!authorizationHeader) {
@@ -97,7 +101,7 @@ function extractToken(authorizationHeader?: string): string | null {
 
 /**
  * Lambda Authorizer handler
- * Validates JWT tokens for API Gateway requests
+ * Validates JWT tokens for API Gateway requests with comprehensive security checks
  */
 export async function handler(
   event: APIGatewayRequestAuthorizerEvent,

@@ -1,5 +1,6 @@
 # Security Module
 # Manages SSM parameters, WAF rules, and security configurations
+# Implements enterprise-grade security controls for API protection and secret management
 
 data "aws_region" "current" {}
 
@@ -8,12 +9,14 @@ data "aws_region" "current" {}
 # ============================================================================
 
 # Generate a random JWT secret if not provided
+# Uses cryptographically secure random generation for production security
 resource "random_password" "jwt_secret" {
   length  = 64
   special = true
 }
 
 # Store JWT secret in SSM Parameter Store with encryption
+# Implements secure secret management with KMS encryption and lifecycle protection
 resource "aws_ssm_parameter" "jwt_secret" {
   name        = "/${var.project}/${var.environment}/jwt-secret"
   description = "JWT secret for API authentication"
@@ -46,6 +49,7 @@ resource "aws_wafv2_web_acl" "api" {
   }
 
   # Rule 1: Rate limiting - prevent abuse
+  # Implements IP-based rate limiting to prevent DDoS attacks and API abuse
   rule {
     name     = "RateLimitRule"
     priority = 1
@@ -74,6 +78,7 @@ resource "aws_wafv2_web_acl" "api" {
   }
 
   # Rule 2: AWS Managed Rules - Common Rule Set
+  # Provides protection against common web application attacks (OWASP Top 10)
   rule {
     name     = "AWSManagedRulesCommonRuleSet"
     priority = 2
@@ -105,6 +110,7 @@ resource "aws_wafv2_web_acl" "api" {
   }
 
   # Rule 3: AWS Managed Rules - Known Bad Inputs
+  # Blocks requests with known malicious patterns and signatures
   rule {
     name     = "AWSManagedRulesKnownBadInputsRuleSet"
     priority = 3
@@ -206,6 +212,7 @@ resource "aws_wafv2_web_acl" "api" {
 }
 
 # Associate WAF with API Gateway
+# Applies security rules to protect the API Gateway endpoints
 resource "aws_wafv2_web_acl_association" "api" {
   count        = var.api_gateway_arn != "" ? 1 : 0
   resource_arn = var.api_gateway_arn
@@ -214,6 +221,7 @@ resource "aws_wafv2_web_acl_association" "api" {
 
 # ============================================================================
 # CloudWatch Alarms for WAF
+# Monitors security events and triggers alerts for suspicious activity
 # ============================================================================
 
 resource "aws_cloudwatch_metric_alarm" "waf_blocked_requests" {

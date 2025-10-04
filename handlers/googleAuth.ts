@@ -18,11 +18,13 @@ const documentClient = DynamoDBDocumentClient.from(dynamoClient, {
 });
 
 // Cache the JWT secret to reduce SSM calls
+// Implements secure caching with TTL to minimize AWS API calls while maintaining security
 let cachedSecret: string | null = null;
 let secretCacheTime: number = 0;
 const SECRET_CACHE_TTL = 300000; // 5 minutes
 
 // Standard headers returned by all JSON responses.
+// Includes CORS headers for cross-origin authentication requests
 const defaultHeaders = {
   "Content-Type": "application/json",
   "Cache-Control": "no-store",
@@ -96,6 +98,7 @@ function resolveUserName(googleUser: GoogleUser): string {
 
 /**
  * Retrieve JWT secret from SSM Parameter Store with caching
+ * Implements secure secret management with performance optimization
  */
 async function getJwtSecret(): Promise<string> {
   const now = Date.now();
@@ -131,6 +134,7 @@ async function getJwtSecret(): Promise<string> {
 
 /**
  * Exchange OAuth code for user info
+ * Implements OAuth 2.0 authorization code flow with PKCE support for enhanced security
  */
 async function exchangeCodeForToken(code: string, redirectUri?: string, codeVerifier?: string): Promise<any> {
   try {
@@ -233,6 +237,7 @@ async function exchangeCodeForToken(code: string, redirectUri?: string, codeVeri
 
 /**
  * Verify Google ID Token
+ * Validates Google ID tokens against Google's public verification endpoint
  * @param googleToken - Google ID Token
  * @returns Google user information
  */
@@ -269,6 +274,7 @@ async function verifyGoogleToken(googleToken: string): Promise<any> {
 
 /**
  * Get or create user in DynamoDB
+ * Implements secure user management with data sanitization and audit trails
  * @param googleUser - Google user information
  * @returns User record
  */
@@ -363,6 +369,7 @@ async function getOrCreateUser(googleUser: GoogleUser): Promise<UserRecord> {
 
 /**
  * Generate JWT token for authenticated user
+ * Creates secure JWT tokens with proper expiration and user context
  * @param user - User information
  * @returns JWT token
  */
@@ -383,6 +390,7 @@ async function generateJwtToken(user: any): Promise<string> {
 
 /**
  * Handle CORS preflight requests
+ * Manages cross-origin resource sharing for authentication endpoints
  */
 function handleCors(event: APIGatewayProxyEventV2): APIGatewayProxyResultV2 | null {
   if (event.requestContext.http.method === "OPTIONS") {
@@ -397,6 +405,7 @@ function handleCors(event: APIGatewayProxyEventV2): APIGatewayProxyResultV2 | nu
 
 /**
  * Main handler for Google authentication
+ * Orchestrates the complete OAuth 2.0 flow with security validations and user management
  */
 export async function handler(
   event: APIGatewayProxyEventV2,
