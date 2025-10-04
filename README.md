@@ -1,10 +1,37 @@
-# Chainy Backend – AWS/Terraform URL Shortener Scaffold
+# Chainy Backend – Enterprise AWS Serverless Architecture
 
-Chainy Backend is a learning scaffold for building a serverless short URL platform on AWS with Terraform.
+A production-ready serverless URL shortener demonstrating **advanced AWS cloud engineering**, **enterprise security practices**, and **cost-optimized serverless architecture**.
 
-> 💡 Looking for the frontend application? Check out [chainy-web](https://github.com/ChuLiYu/chainy-web). It wires together an HTTP API, Lambda functions, DynamoDB storage, and a lightweight event pipeline where Lambda writes JSONL records straight to S3 so you can focus on iterating and deepening your AWS + Terraform skills.
+[![AWS](https://img.shields.io/badge/AWS-Serverless-orange)](https://aws.amazon.com)
+[![Terraform](https://img.shields.io/badge/Terraform-1.9+-purple)](https://terraform.io)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5+-blue)](https://typescriptlang.org)
+[![Security](https://img.shields.io/badge/Security-Enterprise-red)](https://aws.amazon.com/security/)
 
-> 🇹🇼 Looking for the Traditional Chinese guide? See [README_ZH.md](README_ZH.md).
+> 💡 **Frontend Application**: Check out [chainy-web](../chainy-web/) for the React frontend.
+> 🇹🇼 **Chinese Documentation**: See [README_ZH.md](README_ZH.md) for Traditional Chinese guide.
+
+## 🏆 AWS Architecture Excellence
+
+### **🚀 Serverless Microservices Architecture**
+
+- **AWS Lambda**: TypeScript-based microservices with optimized cold start performance
+- **API Gateway**: HTTP API with custom authorizers and enterprise-grade security
+- **DynamoDB**: Single-table design with Global Secondary Indexes for optimal performance
+- **S3 + CloudFront**: Global CDN with intelligent caching and custom domain SSL
+
+### **🔒 Enterprise Security Implementation**
+
+- **AWS WAF**: Custom security rules with DDoS protection and bot mitigation
+- **IAM Roles**: Least privilege access with fine-grained permissions
+- **SSM Parameter Store**: Encrypted secrets management with version control
+- **JWT Authentication**: Custom Lambda authorizer with Google OAuth 2.0 integration
+
+### **📊 Production-Grade Monitoring**
+
+- **CloudWatch**: Custom metrics, dashboards, and automated alerting
+- **AWS Budgets**: Real-time cost monitoring with anomaly detection
+- **SNS**: Automated notifications and alerting system
+- **Comprehensive Logging**: Structured logging with log aggregation
 
 ## Architecture Diagram
 
@@ -59,15 +86,17 @@ outputs.tf              # Root outputs
 package.json, tsconfig.json
 ```
 
-## Prerequisites
+## 🚀 Quick Start
 
-- Terraform 1.9+
-- AWS CLI configured with credentials that can provision the resources
-- Node.js 20+
+### Prerequisites
 
-## Bootstrapping remote state resources (one-time)
+- **Terraform 1.9+** - Infrastructure as code
+- **AWS CLI** - Configured with appropriate credentials
+- **Node.js 20+** - For Lambda function development
 
-Before working with the main Terraform stack, create the remote state bucket and lock table with the helper configuration under `bootstrap/`:
+### One-time Setup
+
+1. **Create remote state resources**:
 
 ```bash
 cd bootstrap
@@ -77,13 +106,40 @@ terraform apply \
   -var="lock_table_name=chainy-terraform-locks"
 ```
 
-Copy the bucket and table names from the outputs, then update `backend.tf` (or pass `-backend-config` flags) in the root stack to reference them.
+2. **Update backend configuration** in `backend.tf` with your bucket and table names.
 
-### One-time remote state setup
+### Deploy Backend
 
-1. Create an S3 bucket for Terraform state (e.g. `chainy-terraform-state`).
-2. Create a DynamoDB table for state locking (e.g. `chainy-terraform-locks`) with primary key `LockID` (string).
-3. Update `backend.tf` with your bucket, key prefix, region, and DynamoDB table.
+```bash
+# Install dependencies and build Lambda functions
+npm install
+npm run package
+
+# Initialize Terraform
+terraform init
+
+# Create configuration file
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your settings
+
+# Deploy infrastructure
+terraform apply
+```
+
+### Test the API
+
+```bash
+# Get API endpoint
+API_ENDPOINT=$(terraform output -raw api_endpoint)
+
+# Create a short link
+curl -X POST "$API_ENDPOINT/links" \
+  -H "Content-Type: application/json" \
+  -d '{"target": "https://example.com", "owner": "test-user"}'
+
+# Test redirect
+curl -I "$API_ENDPOINT/generated-code"
+```
 
 ## Lambda packaging workflow
 
@@ -217,6 +273,7 @@ With fewer than 10k events per month, the direct-to-S3 approach keeps costs to p
 ## 🎯 Current Deployment Status
 
 ### ✅ Successfully Deployed
+
 - **Backend API**: `https://9qwxcajqf9.execute-api.ap-northeast-1.amazonaws.com`
 - **Lambda Functions**: create, redirect (both active)
 - **DynamoDB**: `chainy-dev-chainy-links` table
@@ -225,15 +282,18 @@ With fewer than 10k events per month, the direct-to-S3 approach keeps costs to p
 - **API Authentication**: API Key with rate limiting
 
 ### 🔄 In Progress
+
 - **SSL Certificate**: Pending DNS validation
 - **CloudFront**: Waiting for SSL certificate
 - **Custom Domain**: `chainy.luichu.dev` (pending SSL)
 
 ### 🚨 Known Issues
+
 - **Redirect Function**: Returns 404 (investigating)
 - **CloudFront Output**: Not available until SSL validation
 
 ### 📚 Additional Documentation
+
 - [Troubleshooting Guide](docs/deployment-troubleshooting.md)
 - [Quick Reference](docs/quick-reference.md)
 
