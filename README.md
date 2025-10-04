@@ -9,7 +9,7 @@ Chainy Backend is a learning scaffold for building a serverless short URL platfo
 ## Architecture Diagram
 
 - [Architecture Overview (English)](docs/architecture.md)
-- [架構說明（中文）](docs/architecture_ZH.md)
+- [Architecture Overview (Chinese)](docs/architecture_ZH.md)
 
 ```mermaid
 graph TB
@@ -108,9 +108,9 @@ region      = "ap-northeast-1"
 lambda_additional_environment = {}
 ```
 
-- `environment` 控制資源命名、tag 與輸出；`region` 預設為 `ap-northeast-1`，可依需求調整。
-- `lambda_additional_environment` 儘可額外補充 env；雜湊鹽值預設由 AWS Systems Manager Parameter Store 取得，路徑為 `/chainy/<environment>/CHAINY_HASH_SALT` 與 `/chainy/<environment>/CHAINY_IP_HASH_SALT`，可透過 `hash_salt_parameter_name` / `ip_hash_salt_parameter_name` 覆寫。
-- 使用 `aws ssm put-parameter --type SecureString --value "$(openssl rand -hex 32)"` 建立鹽值，並確保 Lambda IAM 角色具備 `ssm:GetParameter` 權限。
+- `environment` controls resource naming, tags, and outputs; `region` defaults to `ap-northeast-1` and can be adjusted as needed.
+- `lambda_additional_environment` can be used to add additional environment variables; hash salts are retrieved from AWS Systems Manager Parameter Store by default at paths `/chainy/<environment>/CHAINY_HASH_SALT` and `/chainy/<environment>/CHAINY_IP_HASH_SALT`, which can be overridden via `hash_salt_parameter_name` / `ip_hash_salt_parameter_name`.
+- Use `aws ssm put-parameter --type SecureString --value "$(openssl rand -hex 32)"` to create salts and ensure Lambda IAM roles have `ssm:GetParameter` permissions.
 
 ## Minimal Web Client
 
@@ -201,7 +201,7 @@ After `terraform apply`, note the `api_endpoint` output (e.g. `https://abc123.ex
 
 ### Event privacy guardrails
 
-- Lambda hashes `owner`, `user_agent`, and (if present) IP addresses before persisting, keeping only SHA-256 digests for grouping while hiding raw strings. Wallet signatures are never stored—只 flag `wallet_signature_present`.
+- Lambda hashes `owner`, `user_agent`, and (if present) IP addresses before persisting, keeping only SHA-256 digests for grouping while hiding raw strings. Wallet signatures are never stored—only flag `wallet_signature_present`.
 - Wallet addresses are masked (first 4 / last 4 characters) and referer/target URLs are normalised to origin + path; query strings and other sensitive fragments are removed.
 - Optional Web3/marketing metadata such as `wallet_provider`, `wallet_type`, `chain_id`, `dapp_id`, UTM tags, geo/ASN, Accept-Language, inferred device/browser families, transaction value/currency, token symbol/address, and partner/project identifiers are retained in coarse form for analytics while the original sensitive values are either hashed, masked, or normalised.
 - `tags` / `feature_flags` arrays are trimmed to at most 10 entries for cost control. A `sensitive_redacted` flag indicates events that had fields sanitised so downstream jobs can branch if needed.
