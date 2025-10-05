@@ -37,6 +37,7 @@ locals {
 
   base_environment = merge({
     CHAINY_ENVIRONMENT        = var.environment,
+    NODE_ENV                  = var.environment,
     CHAINY_TABLE_NAME         = var.table_name,
     CHAINY_EVENTS_BUCKET_NAME = var.events_bucket_name,
     CHAINY_HASH_SALT_PARAM    = var.hash_salt_parameter_name,

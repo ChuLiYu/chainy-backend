@@ -6,6 +6,10 @@ import {
 import { GetCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { documentClient, getTableName, ChainyLink } from "../lib/dynamo.js";
 import { putDomainEvent } from "../lib/events.js";
+import { createLogger } from "../lib/logger.js";
+
+// Initialize logger for this Lambda function
+const logger = createLogger('redirect');
 
 // Standardized JSON response wrapper for error scenarios.
 // Ensures consistent error response format across all redirect failures
@@ -358,7 +362,7 @@ export async function handler(
         ...requestMeta,
       },
     }).catch((error: unknown) => {
-      console.error("Failed to write link_click event to S3", error);
+      // S3 event logging failed - non-critical error
     });
 
     return {
@@ -370,7 +374,11 @@ export async function handler(
       body: "",
     };
   } catch (error: unknown) {
-    console.error("Unexpected error during redirect", error);
+    logger.error("Unexpected error during redirect", {
+      operation: 'redirect',
+      code: event.pathParameters?.code,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
     return jsonResponse(500, { message: "Internal server error" });
   }
 }

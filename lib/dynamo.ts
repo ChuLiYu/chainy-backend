@@ -37,4 +37,5 @@ export interface ChainyLink {
   clicks?: number;
   last_click_at?: string;
   wallet_address?: string;
+  deleted_at?: string;
 }

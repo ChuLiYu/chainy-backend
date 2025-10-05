@@ -6,6 +6,10 @@ import jwt from "jsonwebtoken";
 import { SSMClient, GetParameterCommand } from "@aws-sdk/client-ssm";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
+import { createLogger } from "../lib/logger.js";
+
+// Initialize logger for this Lambda function
+const logger = createLogger('googleAuth');
 
 const ssmClient = new SSMClient({});
 const dynamoClient = new DynamoDBClient({});
@@ -127,7 +131,10 @@ async function getJwtSecret(): Promise<string> {
 
     return cachedSecret;
   } catch (error) {
-    console.error("Failed to retrieve JWT secret from SSM:", error);
+    logger.error("Failed to retrieve JWT secret from SSM", {
+      operation: 'getJwtSecret',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
     throw new Error("Authentication configuration error");
   }
 }
@@ -144,24 +151,21 @@ async function exchangeCodeForToken(code: string, redirectUri?: string, codeVeri
     // If client secret is not in environment variables, try to get it from SSM
     if (!GOOGLE_CLIENT_SECRET) {
       try {
-        console.log("GOOGLE_CLIENT_SECRET not in env, trying SSM...");
         const { SSMClient, GetParameterCommand } = await import("@aws-sdk/client-ssm");
         const ssmClient = new SSMClient({ region: process.env.AWS_REGION || "ap-northeast-1" });
         
+        const parameterName = process.env.GOOGLE_CLIENT_SECRET_PARAMETER_NAME || "/chainy/prod/google-client-secret";
+        
         const command = new GetParameterCommand({
-          Name: "/chainy/prod/google-client-secret",
+          Name: parameterName,
           WithDecryption: true
         });
         
-        console.log("Fetching SSM parameter: /chainy/prod/google-client-secret");
         const response = await ssmClient.send(command);
         GOOGLE_CLIENT_SECRET = response.Parameter?.Value;
-        console.log("Successfully retrieved Google client secret from SSM");
       } catch (ssmError) {
         console.error("Failed to get Google client secret from SSM:", ssmError);
       }
-    } else {
-      console.log("GOOGLE_CLIENT_SECRET found in environment variables");
     }
     
     if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
@@ -410,8 +414,6 @@ function handleCors(event: APIGatewayProxyEventV2): APIGatewayProxyResultV2 | nu
 export async function handler(
   event: APIGatewayProxyEventV2,
 ): Promise<APIGatewayProxyResultV2> {
-  console.log("Google auth request:", JSON.stringify(event, null, 2));
-
   // Handle CORS preflight
   const corsResponse = handleCors(event);
   if (corsResponse) {
@@ -452,8 +454,6 @@ export async function handler(
 
     // Generate JWT token
     const jwtToken = await generateJwtToken(user);
-
-    console.log("Google authentication successful for user:", user.email);
 
     return jsonResponse(200, {
       jwt: jwtToken,

@@ -14,6 +14,10 @@ import jwt from "jsonwebtoken";
 import { SSMClient, GetParameterCommand } from "@aws-sdk/client-ssm";
 import { documentClient, getTableName, ChainyLink } from "../lib/dynamo.js";
 import { putDomainEvent } from "../lib/events.js";
+import { createLogger } from "../lib/logger.js";
+
+// Initialize logger for this Lambda function
+const logger = createLogger('create');
 
 // Standard headers returned by all JSON responses.
 // These headers ensure proper content type and prevent caching of sensitive API responses
@@ -26,6 +30,9 @@ const defaultHeaders = {
 let cachedSecret: string | null = null;
 let secretCacheTime: number = 0;
 const SECRET_CACHE_TTL = 300000; // 5 minutes
+
+// Initialize SSM client
+const ssmClient = new SSMClient({ region: process.env.AWS_REGION || "ap-northeast-1" });
 
 /**
  * Retrieve JWT secret from SSM Parameter Store with caching
@@ -56,7 +63,10 @@ async function getJwtSecret(): Promise<string> {
     
     return cachedSecret;
   } catch (error) {
-    console.error("Failed to retrieve JWT secret:", error);
+    logger.error("Failed to retrieve JWT secret from SSM", {
+      operation: 'getJwtSecret',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
     throw new Error("Failed to retrieve JWT secret");
   }
 }
@@ -84,7 +94,10 @@ async function verifyJwtToken(authHeader: string): Promise<string> {
 
     return userId;
   } catch (error) {
-    console.error("JWT verification failed:", error);
+    logger.error("JWT token verification failed", {
+      operation: 'verifyJwtToken',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
     throw new Error("Invalid or expired token");
   }
 }
@@ -300,8 +313,6 @@ export async function handler(
       message.includes("Custom code");
     const statusCode = isClientError ? 400 : 500;
 
-    console.error(`Error handling ${method} request`, error);
-
     return jsonResponse(statusCode, { message });
   }
 }
@@ -318,7 +329,6 @@ async function handleCreate(event: APIGatewayProxyEventV2): Promise<APIGatewayPr
     try {
       owner = await verifyJwtToken(authHeader);
     } catch (error) {
-      console.error("JWT verification failed in handleCreate:", error);
       return jsonResponse(401, { message: "Invalid or expired token" });
     }
   }
@@ -459,7 +469,7 @@ async function handleCreate(event: APIGatewayProxyEventV2): Promise<APIGatewayPr
       },
     });
   } catch (error: unknown) {
-    console.error("Failed to write link_create event to S3", error);
+    // S3 event logging failed - non-critical error
   }
 
   return jsonResponse(201, appendShortUrl(
@@ -546,7 +556,7 @@ async function handleUpdate(event: APIGatewayProxyEventV2): Promise<APIGatewayPr
       ...extractRequestMetadata(event),
     },
   }).catch((error: unknown) => {
-    console.error("Failed to write link_update event to S3", error);
+    // S3 event logging failed - non-critical error
   });
 
   return jsonResponse(200, appendShortUrl(link, event));
@@ -586,7 +596,6 @@ async function handleGetUserLinks(event: APIGatewayProxyEventV2): Promise<APIGat
   try {
     userId = await verifyJwtToken(authHeader);
   } catch (error) {
-    console.error("JWT verification failed in handleGetUserLinks:", error);
     return jsonResponse(401, { message: "Invalid or expired token" });
   }
 
@@ -621,7 +630,6 @@ async function handleGetUserLinks(event: APIGatewayProxyEventV2): Promise<APIGat
 
     return jsonResponse(200, { links: linksWithUrls });
   } catch (error) {
-    console.error("Error fetching user links:", error);
     return jsonResponse(500, { message: "Failed to fetch user links" });
   }
 }
@@ -666,7 +674,7 @@ async function handleDelete(event: APIGatewayProxyEventV2): Promise<APIGatewayPr
       ...extractRequestMetadata(event),
     },
   }).catch((error: unknown) => {
-    console.error("Failed to write link_delete event to S3", error);
+    // S3 event logging failed - non-critical error
   });
 
   return {

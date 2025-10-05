@@ -8,7 +8,7 @@
  * 3. 獲取短網址列表並驗證排序
  */
 
-const API_ENDPOINT = 'https://9qwxcajqf9.execute-api.ap-northeast-1.amazonaws.com';
+const API_ENDPOINT = process.env.CHAINY_API_ENDPOINT || 'https://your-api-gateway-url.amazonaws.com';
 
 // 測試用的 JWT Token (需要替換為有效的 token)
 const TEST_TOKEN = 'YOUR_JWT_TOKEN_HERE';

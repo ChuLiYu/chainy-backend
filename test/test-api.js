@@ -9,7 +9,7 @@ import jwt from 'jsonwebtoken';
 import https from 'https';
 
 // Configuration
-const API_BASE_URL = 'https://9qwxcajqf9.execute-api.ap-northeast-1.amazonaws.com';
+const API_BASE_URL = process.env.CHAINY_API_ENDPOINT || 'https://your-api-gateway-url.amazonaws.com';
 const JWT_SECRET = process.env.JWT_SECRET || 'your-jwt-secret-here'; // Need to get from AWS SSM
 
 /**

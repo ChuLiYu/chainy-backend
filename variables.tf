@@ -190,7 +190,24 @@ variable "google_client_id" {
 }
 
 # Google Client Secret is now managed via SSM Parameter Store
-# Removed google_client_secret variable - using SSM Parameter Store instead
+# Cost optimization and debugging configuration
+variable "cost_optimization" {
+  description = "Enable cost optimization features"
+  type        = bool
+  default     = false
+}
+
+variable "debug_mode" {
+  description = "Enable debug mode for additional logging"
+  type        = bool
+  default     = false
+}
+
+variable "log_level" {
+  description = "Logging level (DEBUG, INFO, WARN, ERROR)"
+  type        = string
+  default     = "INFO"
+}
 
 variable "google_redirect_uri" {
   description = "Google OAuth redirect URI used when exchanging authorization codes."
@@ -208,4 +225,62 @@ variable "users_table_arn" {
   description = "DynamoDB users table ARN for IAM permissions."
   type        = string
   default     = ""
+}
+
+# ============================================================================
+# Additional Configuration Variables
+# ============================================================================
+
+variable "domain" {
+  description = "Domain name for the application."
+  type        = string
+  default     = ""
+}
+
+variable "protocol" {
+  description = "Protocol for the application (http/https)."
+  type        = string
+  default     = "https"
+}
+
+variable "aws_region" {
+  description = "AWS region for deployment."
+  type        = string
+  default     = "ap-northeast-1"
+}
+
+variable "dynamodb_table_name" {
+  description = "DynamoDB table name for links."
+  type        = string
+  default     = ""
+}
+
+variable "jwt_secret_parameter_name" {
+  description = "SSM parameter name for JWT secret."
+  type        = string
+  default     = ""
+}
+
+variable "waf_enabled" {
+  description = "Enable WAF protection."
+  type        = bool
+  default     = false
+}
+
+variable "cost_optimization" {
+  description = "Enable cost optimization features."
+  type        = bool
+  default     = false
+}
+
+variable "debug_mode" {
+  description = "Enable debug mode."
+  type        = bool
+  default     = false
+}
+
+variable "log_level" {
+  description = "Log level for the application."
+  type        = string
+  default     = "INFO"
 }

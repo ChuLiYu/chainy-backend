@@ -1,6 +1,9 @@
 # Google Authentication Lambda Module
 # Handles Google OAuth 2.0 authentication and JWT token generation
 
+data "aws_region" "current" {}
+data "aws_caller_identity" "current" {}
+
 locals {
   function_name = "${var.project}-${var.environment}-google-auth"
 }
@@ -16,11 +19,12 @@ resource "aws_lambda_function" "google_auth" {
 
   environment {
     variables = {
-      JWT_SECRET_PARAMETER_NAME = var.jwt_secret_parameter_name
-      USERS_TABLE_NAME          = var.users_table_name
-      GOOGLE_CLIENT_ID          = var.google_client_id
-      GOOGLE_CLIENT_SECRET      = var.google_client_secret
-      GOOGLE_REDIRECT_URI       = var.google_redirect_uri
+      NODE_ENV                            = var.environment
+      JWT_SECRET_PARAMETER_NAME           = var.jwt_secret_parameter_name
+      USERS_TABLE_NAME                    = var.users_table_name
+      GOOGLE_CLIENT_ID                    = var.google_client_id
+      GOOGLE_CLIENT_SECRET_PARAMETER_NAME = var.google_client_secret_parameter_name
+      GOOGLE_REDIRECT_URI                 = var.google_redirect_uri
     }
   }
 
@@ -76,7 +80,8 @@ resource "aws_iam_role_policy" "google_auth" {
           "ssm:GetParameters"
         ]
         Resource = [
-          var.jwt_secret_parameter_arn
+          var.jwt_secret_parameter_arn,
+          "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter${var.google_client_secret_parameter_name}"
         ]
       },
       {

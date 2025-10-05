@@ -5,6 +5,10 @@ import {
 } from "aws-lambda";
 import jwt from "jsonwebtoken";
 import { SSMClient, GetParameterCommand } from "@aws-sdk/client-ssm";
+import { createLogger } from "../lib/logger.js";
+
+// Initialize logger for this Lambda function
+const logger = createLogger('authorizer');
 
 const ssmClient = new SSMClient({});
 
@@ -45,7 +49,10 @@ async function getJwtSecret(): Promise<string> {
 
     return cachedSecret;
   } catch (error) {
-    console.error("Failed to retrieve JWT secret from SSM:", error);
+    logger.error("Failed to retrieve JWT secret from SSM", {
+      operation: 'getJwtSecret',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
     throw new Error("Authentication configuration error");
   }
 }
@@ -74,8 +81,6 @@ function generatePolicy(
     },
     context,
   };
-  
-  console.log("Policy structure:", JSON.stringify(policy, null, 2));
   
   return policy;
 }
@@ -109,15 +114,9 @@ export async function handler(
 ): Promise<APIGatewayAuthorizerResult> {
   context.callbackWaitsForEmptyEventLoop = false;
 
-  console.log("Authorization request:", {
-    methodArn: event.methodArn,
-    type: event.type,
-  });
-
   const token = extractToken(event.headers?.authorization || event.headers?.Authorization);
 
   if (!token) {
-    console.warn("No token provided");
     throw new Error("Unauthorized"); // This will return 401
   }
 
@@ -130,22 +129,20 @@ export async function handler(
       algorithms: ["HS256"],
     }) as jwt.JwtPayload;
 
-    console.log("Token verified successfully for user:", decoded.sub);
-
     // Extract user information from token
     const userId = decoded.sub || "unknown";
     const email = decoded.email || "";
     const name = decoded.name || "";
 
     // For API Gateway v2, return a simple policy
-    const policy = {
+    const policy: APIGatewayAuthorizerResult = {
       principalId: userId,
       policyDocument: {
         Version: "2012-10-17",
         Statement: [
           {
             Action: "execute-api:Invoke",
-            Effect: "Allow",
+            Effect: "Allow" as const,
             Resource: "arn:aws:execute-api:ap-northeast-1:277375108569:9qwxcajqf9/$default/*/*",
           },
         ],
@@ -158,14 +155,7 @@ export async function handler(
       },
     };
     
-    console.log("Returning policy:", JSON.stringify(policy, null, 2));
-    
-    try {
-      return policy;
-    } catch (error) {
-      console.error("Error returning policy:", error);
-      throw error;
-    }
+    return policy;
   } catch (error) {
     console.error("Token verification failed:", error);
 

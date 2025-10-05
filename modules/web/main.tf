@@ -201,6 +201,20 @@ resource "aws_cloudfront_distribution" "web" {
     origin_request_policy_id = "88a5eaf4-2fd4-4709-b370-b4c650ea3fcf" # Managed-CORS-S3Origin
   }
 
+  # Route root-level JS files to S3
+  ordered_cache_behavior {
+    path_pattern     = "*.js"
+    target_origin_id = "s3-web-origin"
+
+    viewer_protocol_policy = "redirect-to-https"
+    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
+    cached_methods         = ["GET", "HEAD"]
+    compress               = true
+
+    cache_policy_id          = "658327ea-f89d-4fab-a63d-7e88639e58f6" # Managed-CachingOptimized
+    origin_request_policy_id = "88a5eaf4-2fd4-4709-b370-b4c650ea3fcf" # Managed-CORS-S3Origin
+  }
+
   restrictions {
     geo_restriction {
       restriction_type = "none"

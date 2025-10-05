@@ -35,10 +35,9 @@ variable "google_client_id" {
   type        = string
 }
 
-variable "google_client_secret" {
-  description = "Google OAuth 2.0 Client Secret for authentication."
+variable "google_client_secret_parameter_name" {
+  description = "SSM Parameter name for Google OAuth 2.0 Client Secret."
   type        = string
-  sensitive   = true
 }
 
 variable "google_redirect_uri" {

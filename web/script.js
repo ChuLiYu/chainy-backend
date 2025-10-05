@@ -4,7 +4,7 @@ const targetField = document.getElementById("target");
 const apiDisplay = document.getElementById("apiDisplay");
 const changeApiBtn = document.getElementById("changeApi");
 
-const defaultApiBase = "https://9qwxcajqf9.execute-api.ap-northeast-1.amazonaws.com";
+const defaultApiBase = "https://your-api-gateway-url.amazonaws.com";
 const storageKey = "chainy.apiEndpoint";
 const params = new URLSearchParams(window.location.search);
 const overrideFromUrl = params.get("api");
