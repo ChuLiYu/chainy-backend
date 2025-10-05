@@ -237,7 +237,7 @@ graph TB
 - **Scalability**: Auto-scaling, load balancing, performance optimization
 - **Security**: Enterprise-grade security implementation
 - **Monitoring**: Comprehensive observability and alerting
-- **Cost Management**: Automated cost controls and optimization
+- **Cost Management**: Automated cost controls and optimization１１
 
 ## 🛠️ Development Setup
 
@@ -476,15 +476,23 @@ For issues and questions:
 
 ## 📚 Documentation
 
+### Core Documentation
 - [📖 Documentation Index](docs/README.md) - Complete documentation guide
 - [🏗️ AWS Architecture](docs/aws/) - Cloud architecture and IAM setup
 - [🔒 Security Guides](docs/security/) - Security implementation and audit
 - [🚀 Deployment](docs/deployment/) - Production deployment guides
 - [📋 Setup Guides](docs/guides/) - Configuration and troubleshooting
+
+### Troubleshooting & Operations
+- [**Troubleshooting Solutions**](docs/TROUBLESHOOTING_SOLUTIONS.md) - Common issues and resolutions
+- [**DNS Configuration Guide**](docs/DNS_CONFIGURATION_GUIDE.md) - CloudFront Error 530 resolution
+- [**CloudFront Deployment Log**](docs/CLOUDFRONT_DEPLOYMENT_LOG.md) - Infrastructure deployment records
 - [Deployment Guide](docs/DEPLOYMENT_GUIDE.md)
 
 ## 🔄 Recent Updates
 
+- ✅ **CloudFront Error 530 Resolution** - Fixed DNS configuration and deployed new CloudFront distribution
+- ✅ **Enhanced Documentation** - Added comprehensive troubleshooting guides and deployment logs
 - ✅ Added note/title feature for authenticated users
 - ✅ Simplified Google login to single redirect button
 - ✅ Implemented comprehensive environment configuration
