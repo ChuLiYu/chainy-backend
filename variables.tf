@@ -266,21 +266,3 @@ variable "waf_enabled" {
   type        = bool
   default     = false
 }
-
-variable "cost_optimization" {
-  description = "Enable cost optimization features."
-  type        = bool
-  default     = false
-}
-
-variable "debug_mode" {
-  description = "Enable debug mode."
-  type        = bool
-  default     = false
-}
-
-variable "log_level" {
-  description = "Log level for the application."
-  type        = string
-  default     = "INFO"
-}
