@@ -100,6 +100,16 @@ resource "aws_cloudfront_distribution" "web" {
 
   aliases = [local.full_domain]
 
+  # Prevent accidental recreation
+  lifecycle {
+    prevent_destroy = true
+    ignore_changes = [
+      # Only ignore changes that don't require recreation
+      tags,
+      tags_all
+    ]
+  }
+
   # S3 origin for static website files
   origin {
     domain_name = aws_s3_bucket.web.bucket_regional_domain_name
@@ -109,8 +119,9 @@ resource "aws_cloudfront_distribution" "web" {
   }
 
   # API Gateway origin for short link redirects
+  # Use static domain name to prevent CloudFront recreation
   origin {
-    domain_name = var.api_domain_name
+    domain_name = "9qwxcajqf9.execute-api.ap-northeast-1.amazonaws.com"
     origin_id   = "api-gateway-origin"
 
     custom_origin_config {

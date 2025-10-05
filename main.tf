@@ -111,7 +111,7 @@ module "lambda" {
   ip_hash_salt_parameter_name = local.ip_salt_parameter_name
   hash_salt_fallback          = var.hash_salt_fallback
   ip_hash_salt_fallback       = var.ip_hash_salt_fallback
-  jwt_secret_parameter_name    = module.security.jwt_secret_parameter_name
+  jwt_secret_parameter_name   = module.security.jwt_secret_parameter_name
   web_domain                  = var.web_domain
   web_subdomain               = var.web_subdomain
 }
@@ -156,8 +156,8 @@ module "web" {
   hosted_zone_id = var.web_hosted_zone_id
   price_class    = var.web_price_class
 
-  # Pass API Gateway domain for short link routing
-  api_domain_name = trimprefix(module.api.api_endpoint, "https://")
+  # Use static API Gateway domain to prevent CloudFront recreation
+  # api_domain_name = trimprefix(module.api.api_endpoint, "https://")
 }
 
 # Budget monitoring and cost control (optional).
