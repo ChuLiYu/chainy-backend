@@ -512,3 +512,17 @@ For issues and questions:
 - ✅ Prepared for production deployment
 - ✅ Converted all documentation to English
 - ✅ Set up GitHub Actions for automated deployment
+
+---
+
+## 👨‍💻 Author
+
+**ChuLiYu**
+- GitHub: [@ChuLiYu](https://github.com/ChuLiYu)
+- Project Repository: [chainy-backend](https://github.com/ChuLiYu/chainy-backend)
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
