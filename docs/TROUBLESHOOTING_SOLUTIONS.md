@@ -147,6 +147,61 @@ This document records the problems encountered during the chainy short URL servi
 - Added `dynamodb:Scan` permission to Lambda execution role
 - Updated IAM policy for `chainy-prod-chainy-create` function
 
+### Problem: "Failed to fetch user links" Error
+
+**Issue:** When clicking "My Short URLs", the frontend showed "Failed to fetch user links" and console displayed `GET .../links 500 (Internal Server Error)`.
+
+**Root Cause:** 
+- CloudWatch logs revealed `AccessDeniedException: User is not authorized to perform: dynamodb:Scan on resource: ...table/chainy-prod-chainy-links`
+- The `create` Lambda function's IAM role was missing the `dynamodb:Scan` permission required to fetch user links
+
+**Symptoms:**
+- Frontend error: "Failed to fetch user links"
+- Console error: `GET .../links 500 (Internal Server Error)`
+- CloudWatch logs: `AccessDeniedException` for `dynamodb:Scan` operation
+
+**Solution:**
+
+1. **Identify Missing Permission:**
+   ```bash
+   # Check CloudWatch logs for the create Lambda function
+   aws logs filter-log-events \
+     --log-group-name /aws/lambda/chainy-prod-chainy-create \
+     --start-time $(date -d '10 minutes ago' +%s)000
+   ```
+
+2. **Update Terraform Configuration:**
+   ```terraform
+   # In chainy/modules/lambda/main.tf
+   dynamodb_actions = {
+     create = [
+       "dynamodb:GetItem",
+       "dynamodb:PutItem", 
+       "dynamodb:UpdateItem",
+       "dynamodb:DeleteItem",
+       "dynamodb:Scan"  # Added this permission
+     ]
+   }
+   ```
+
+3. **Apply Terraform Changes:**
+   ```bash
+   cd chainy
+   terraform apply -target=module.lambda -auto-approve
+   ```
+
+4. **Verification:**
+   ```bash
+   # Test the /links endpoint
+   curl -H "Authorization: Bearer $JWT_TOKEN" \
+        https://9qwxcajqf9.execute-api.ap-northeast-1.amazonaws.com/links
+   ```
+
+**Prevention:**
+- Use automated permission analysis scripts to detect missing permissions
+- Implement comprehensive IAM policy testing in CI/CD pipeline
+- Regular permission audits using AWS Config or similar tools
+
 ## 4. User Authentication and Data Isolation
 
 ### Problem: Anonymous Short Links Appearing in User's List

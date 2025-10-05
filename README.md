@@ -491,8 +491,18 @@ For issues and questions:
 - [**CloudFront Deployment Log**](docs/CLOUDFRONT_DEPLOYMENT_LOG.md) - Infrastructure deployment records
 - [Deployment Guide](docs/DEPLOYMENT_GUIDE.md)
 
+### Automation Tools
+
+- [**AWS Automation Tools Guide**](docs/AUTOMATION_TOOLS_GUIDE.md) - Comprehensive guide for automated AWS management
+- [**Permission Analysis Script**](scripts/analyze-permissions.sh) - Automated AWS permission detection
+- [**Permission Verification Script**](scripts/verify-permissions.sh) - IAM policy validation
+- [**One-Click Deployment Script**](scripts/deploy.sh) - Automated full-stack deployment
+- [**CI/CD GitHub Actions**](.github/workflows/deploy.yml) - Automated deployment pipeline
+
 ## 🔄 Recent Updates
 
+- ✅ **AWS Automation Tools** - Created comprehensive automation scripts for permission management and deployment
+- ✅ **DynamoDB Scan Permission Fix** - Resolved "Failed to fetch user links" error by adding missing IAM permissions
 - ✅ **CloudFront Error 530 Resolution** - Fixed DNS configuration and deployed new CloudFront distribution
 - ✅ **Enhanced Documentation** - Added comprehensive troubleshooting guides and deployment logs
 - ✅ Added note/title feature for authenticated users

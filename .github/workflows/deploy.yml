@@ -1,0 +1,67 @@
+name: Deploy Chainy Infrastructure
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "chainy/**"
+      - "chainy-web/**"
+  pull_request:
+    branches: [main]
+
+jobs:
+  terraform-plan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.0
+
+      - name: Terraform Plan
+        run: |
+          cd chainy
+          terraform init
+          terraform plan -out=tfplan
+
+      - name: Upload Plan
+        uses: actions/upload-artifact@v3
+        with:
+          name: terraform-plan
+          path: chainy/tfplan
+
+  deploy:
+    needs: terraform-plan
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Download Plan
+        uses: actions/download-artifact@v3
+        with:
+          name: terraform-plan
+
+      - name: Setup AWS CLI
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-1
+
+      - name: Deploy Infrastructure
+        run: |
+          cd chainy
+          terraform init
+          terraform apply tfplan
+
+      - name: Deploy Frontend
+        run: |
+          cd chainy-web
+          npm install
+          npm run build
+          aws s3 sync dist/ s3://chainy-prod-web --delete
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
