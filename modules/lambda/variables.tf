@@ -86,6 +86,11 @@ variable "ip_hash_salt_parameter_name" {
   type        = string
 }
 
+variable "jwt_secret_parameter_name" {
+  description = "SSM parameter name for JWT secret."
+  type        = string
+}
+
 variable "hash_salt_fallback" {
   description = "Fallback hash salt value if SSM parameter retrieval fails."
   type        = string

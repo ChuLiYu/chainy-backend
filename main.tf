@@ -111,6 +111,7 @@ module "lambda" {
   ip_hash_salt_parameter_name = local.ip_salt_parameter_name
   hash_salt_fallback          = var.hash_salt_fallback
   ip_hash_salt_fallback       = var.ip_hash_salt_fallback
+  jwt_secret_parameter_name    = module.security.jwt_secret_parameter_name
   web_domain                  = var.web_domain
   web_subdomain               = var.web_subdomain
 }

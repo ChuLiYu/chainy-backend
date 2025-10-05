@@ -67,6 +67,7 @@ resource "aws_apigatewayv2_route" "redirect" {
 resource "aws_apigatewayv2_route" "create" {
   for_each = toset([
     "POST /links",
+    "GET /links",
     "GET /links/{code}",
     "PUT /links/{code}",
     "DELETE /links/{code}"

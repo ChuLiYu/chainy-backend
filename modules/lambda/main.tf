@@ -42,7 +42,8 @@ locals {
     CHAINY_HASH_SALT_PARAM    = var.hash_salt_parameter_name,
     CHAINY_IP_HASH_SALT_PARAM = var.ip_hash_salt_parameter_name,
     CHAINY_HASH_SALT          = var.hash_salt_fallback,
-    CHAINY_IP_HASH_SALT       = var.ip_hash_salt_fallback
+    CHAINY_IP_HASH_SALT       = var.ip_hash_salt_fallback,
+    JWT_SECRET_PARAMETER_NAME = var.jwt_secret_parameter_name
   }, local.short_link_environment, var.additional_environment)
 
   source_dirs = {
@@ -119,7 +120,8 @@ resource "aws_iam_role_policy" "lambda" {
         ]
         Resource = [
           local.hash_salt_parameter_arn,
-          local.ip_salt_parameter_arn
+          local.ip_salt_parameter_arn,
+          "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/${var.project}/${var.environment}/jwt-secret"
         ]
       },
       {

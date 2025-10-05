@@ -10,6 +10,8 @@ import {
   UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { randomBytes } from "crypto";
+import jwt from "jsonwebtoken";
+import { SSMClient, GetParameterCommand } from "@aws-sdk/client-ssm";
 import { documentClient, getTableName, ChainyLink } from "../lib/dynamo.js";
 import { putDomainEvent } from "../lib/events.js";
 
@@ -19,6 +21,73 @@ const defaultHeaders = {
   "Content-Type": "application/json",
   "Cache-Control": "no-store",
 };
+
+// Cache the JWT secret to reduce SSM calls
+let cachedSecret: string | null = null;
+let secretCacheTime: number = 0;
+const SECRET_CACHE_TTL = 300000; // 5 minutes
+
+/**
+ * Retrieve JWT secret from SSM Parameter Store with caching
+ */
+async function getJwtSecret(): Promise<string> {
+  const now = Date.now();
+  
+  if (cachedSecret && (now - secretCacheTime) < SECRET_CACHE_TTL) {
+    return cachedSecret;
+  }
+
+  const parameterName = process.env.JWT_SECRET_PARAMETER_NAME || "/chainy/prod/jwt-secret";
+
+  try {
+    const command = new GetParameterCommand({
+      Name: parameterName,
+      WithDecryption: true,
+    });
+
+    const response = await ssmClient.send(command);
+    
+    if (!response.Parameter?.Value) {
+      throw new Error("JWT secret not found in SSM Parameter Store");
+    }
+
+    cachedSecret = response.Parameter.Value;
+    secretCacheTime = now;
+    
+    return cachedSecret;
+  } catch (error) {
+    console.error("Failed to retrieve JWT secret:", error);
+    throw new Error("Failed to retrieve JWT secret");
+  }
+}
+
+/**
+ * Verify JWT token and extract user ID
+ */
+async function verifyJwtToken(authHeader: string): Promise<string> {
+  if (!authHeader.startsWith("Bearer ")) {
+    throw new Error("Invalid authorization header format");
+  }
+
+  const token = authHeader.substring(7);
+  
+  try {
+    const jwtSecret = await getJwtSecret();
+    const decoded = jwt.verify(token, jwtSecret, {
+      algorithms: ["HS256"],
+    }) as jwt.JwtPayload;
+
+    const userId = decoded.sub;
+    if (!userId) {
+      throw new Error("User ID not found in token");
+    }
+
+    return userId;
+  } catch (error) {
+    console.error("JWT verification failed:", error);
+    throw new Error("Invalid or expired token");
+  }
+}
 
 // Helper for crafting JSON API responses.
 // Standardizes response format across all API endpoints with consistent headers
@@ -242,14 +311,16 @@ async function handleCreate(event: APIGatewayProxyEventV2): Promise<APIGatewayPr
   const target = assertTargetUrl(payload.target);
   
   // Get user ID from Authorization header for authenticated users
-  // TODO: Implement proper JWT token verification and user extraction
   const authHeader = headerLookup(event, "authorization");
   let owner: string | undefined;
   
   if (authHeader && authHeader.startsWith("Bearer ")) {
-    // TODO: Verify JWT token and extract user ID
-    // For now, we'll use a placeholder user ID
-    owner = "user-placeholder";
+    try {
+      owner = await verifyJwtToken(authHeader);
+    } catch (error) {
+      console.error("JWT verification failed in handleCreate:", error);
+      return jsonResponse(401, { message: "Invalid or expired token" });
+    }
   }
   
   const requestedCode = typeof payload.code === "string" ? payload.code.trim() : undefined;
@@ -511,11 +582,13 @@ async function handleGetUserLinks(event: APIGatewayProxyEventV2): Promise<APIGat
     return jsonResponse(401, { message: "Authorization header required" });
   }
 
-  const token = authHeader.substring(7);
-  
-  // TODO: Verify JWT token and extract user ID
-  // For now, we'll use a placeholder user ID
-  const userId = "user-placeholder"; // This should be extracted from JWT token
+  let userId: string;
+  try {
+    userId = await verifyJwtToken(authHeader);
+  } catch (error) {
+    console.error("JWT verification failed in handleGetUserLinks:", error);
+    return jsonResponse(401, { message: "Invalid or expired token" });
+  }
 
   try {
     // Scan DynamoDB for links owned by this user and not soft-deleted
