@@ -189,12 +189,8 @@ variable "google_client_id" {
   default     = ""
 }
 
-variable "google_client_secret" {
-  description = "Google OAuth 2.0 Client Secret for authentication."
-  type        = string
-  default     = ""
-  sensitive   = true
-}
+# Google Client Secret is now managed via SSM Parameter Store
+# Removed google_client_secret variable - using SSM Parameter Store instead
 
 variable "google_redirect_uri" {
   description = "Google OAuth redirect URI used when exchanging authorization codes."

@@ -31,5 +31,10 @@ yarn-error.log*
 # Terraform secrets
 terraform.tfvars
 terraform.tfvars.backup
+terraform.tfvars.*
 *.auto.tfvars
 *.tfvars.backup
+
+# Environment files
+.env
+.env.*

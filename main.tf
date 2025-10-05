@@ -80,13 +80,13 @@ module "google_auth" {
   environment = var.environment
   tags        = local.tags
 
-  jwt_secret_parameter_name = module.security.jwt_secret_parameter_name
-  jwt_secret_parameter_arn  = module.security.jwt_secret_parameter_arn
-  users_table_name          = var.users_table_name
-  users_table_arn           = var.users_table_arn
-  google_client_id          = var.google_client_id
-  google_client_secret      = var.google_client_secret
-  google_redirect_uri       = var.google_redirect_uri
+  jwt_secret_parameter_name           = module.security.jwt_secret_parameter_name
+  jwt_secret_parameter_arn            = module.security.jwt_secret_parameter_arn
+  users_table_name                    = var.users_table_name
+  users_table_arn                     = var.users_table_arn
+  google_client_id                    = var.google_client_id
+  google_client_secret_parameter_name = "/chainy/prod/google-client-secret"
+  google_redirect_uri                 = var.google_redirect_uri
 }
 
 # Lambda functions for redirecting and managing links, plus IAM roles.
@@ -157,7 +157,7 @@ module "web" {
   price_class    = var.web_price_class
 
   # Use static API Gateway domain to prevent CloudFront recreation
-  # api_domain_name = trimprefix(module.api.api_endpoint, "https://")
+  api_domain_name = "9qwxcajqf9.execute-api.ap-northeast-1.amazonaws.com" # Static domain to prevent CloudFront recreation
 }
 
 # Budget monitoring and cost control (optional).
