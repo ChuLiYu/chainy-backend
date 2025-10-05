@@ -13,11 +13,13 @@ This guide provides step-by-step instructions for resolving CloudFront Error 530
 ## Current Status
 
 ### Before Fix
+
 - **CNAME Target:** `d3hdtwr5zmjki6.cloudfront.net` ❌ (Does not exist)
 - **Error:** Cloudflare Error 530
 - **Status:** Service unavailable
 
 ### After Fix
+
 - **CNAME Target:** `d3eryivvnolnm9.cloudfront.net` ✅ (Active distribution)
 - **CloudFront Distribution ID:** `E32Z667JCKF9BD`
 - **Status:** Service should be available after DNS update
@@ -52,6 +54,7 @@ This guide provides step-by-step instructions for resolving CloudFront Error 530
 ### 4. Verify Configuration
 
 The updated record should show:
+
 - **Type:** CNAME
 - **Name:** chainy
 - **Target:** `d3eryivvnolnm9.cloudfront.net`
@@ -98,18 +101,21 @@ aws cloudfront get-distribution --id E32Z667JCKF9BD
 ### If Error 530 Persists
 
 1. **Check DNS Propagation:**
+
    ```bash
    dig chainy.luichu.dev
    # Should show Cloudflare IPs
    ```
 
 2. **Verify CloudFront Status:**
+
    ```bash
    aws cloudfront get-distribution --id E32Z667JCKF9BD
    # Should show status "Deployed"
    ```
 
 3. **Clear Browser Cache:**
+
    - Hard refresh (Ctrl+F5 or Cmd+Shift+R)
    - Or use incognito/private browsing mode
 
@@ -120,11 +126,13 @@ aws cloudfront get-distribution --id E32Z667JCKF9BD
 ### If Service Still Unavailable
 
 1. **Verify SSL Certificate:**
+
    ```bash
    openssl s_client -connect chainy.luichu.dev:443 -servername chainy.luichu.dev
    ```
 
 2. **Check CloudFront Origin Configuration:**
+
    - Ensure origins are properly configured
    - Verify SSL/TLS settings
 
@@ -135,18 +143,22 @@ aws cloudfront get-distribution --id E32Z667JCKF9BD
 ## Prevention Measures
 
 ### 1. Infrastructure as Code
+
 - Always manage CloudFront distributions through Terraform
 - Include DNS records in Terraform configuration when possible
 
 ### 2. Monitoring
+
 - Set up CloudWatch alarms for CloudFront distribution status
 - Monitor DNS resolution health
 
 ### 3. Documentation
+
 - Keep DNS configuration documentation up to date
 - Document all CloudFront distribution IDs and domains
 
 ### 4. Testing
+
 - Test DNS changes in staging environment first
 - Verify service availability after any DNS changes
 
@@ -159,6 +171,7 @@ aws cloudfront get-distribution --id E32Z667JCKF9BD
 ## Contact Information
 
 For additional support or questions regarding this DNS configuration:
+
 - Check AWS CloudFront documentation
 - Review Cloudflare DNS documentation
 - Consult Terraform CloudFront module documentation

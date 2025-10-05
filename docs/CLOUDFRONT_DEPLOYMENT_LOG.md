@@ -11,18 +11,21 @@
 ### Deployment Steps
 
 1. **Identified Missing CloudFront Distribution**
+
    ```bash
    aws cloudfront get-distribution --id d3hdtwr5zmjki6
    # Result: NoSuchDistribution error
    ```
 
 2. **Deployed Web Module via Terraform**
+
    ```bash
    cd chainy
    terraform apply -target=module.web -auto-approve
    ```
 
 3. **Resources Created:**
+
    - CloudFront Distribution: `E32Z667JCKF9BD`
    - CloudFront Domain: `d3eryivvnolnm9.cloudfront.net`
    - ACM Certificate: `arn:aws:acm:us-east-1:277375108569:certificate/9105158f-1726-46da-8ba5-e8b38881db24`
@@ -41,10 +44,12 @@
 **Aliases:** `chainy.luichu.dev`
 
 **Origins:**
+
 - API Gateway Origin: `9qwxcajqf9.execute-api.ap-northeast-1.amazonaws.com`
 - S3 Web Origin: `chainy-prod-web.s3.ap-northeast-1.amazonaws.com`
 
 **Cache Behaviors:**
+
 - Default: API Gateway (all methods)
 - `*.html`: S3 Web Origin (GET, HEAD, OPTIONS)
 - `*.svg`: S3 Web Origin (GET, HEAD, OPTIONS)

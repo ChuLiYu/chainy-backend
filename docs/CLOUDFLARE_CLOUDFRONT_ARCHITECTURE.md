@@ -17,6 +17,7 @@ chainy.luichu.dev → d3eryivvnolnm9.cloudfront.net
 ```
 
 **⚠️ 重要更新 (2025-10-05)**:
+
 - 舊的 CloudFront 分發 `d3hdtwr5zmjki6.cloudfront.net` 不存在，導致 Error 530
 - 已創建新的 CloudFront 分發 `d3eryivvnolnm9.cloudfront.net`
 - Cloudflare DNS 需要更新指向新的 CloudFront 分發
@@ -45,6 +46,7 @@ Proxy Status: 🟠 Proxied (Auto)
 ```
 
 **⚠️ 配置更新 (2025-10-05)**:
+
 - 需要將 CNAME 目標從 `d3hdtwr5zmjki6.cloudfront.net` 更新為 `d3eryivvnolnm9.cloudfront.net`
 - 保持代理狀態為已代理（橙色雲朵）
 

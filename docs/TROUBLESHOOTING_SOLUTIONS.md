@@ -229,12 +229,14 @@ This document records the problems encountered during the chainy short URL servi
 
 **Issue:** Cloudflare Error 530 when accessing `chainy.luichu.dev`, showing "Origin DNS resolution failed" message.
 
-**Root Cause:** 
+**Root Cause:**
+
 - Cloudflare DNS was configured to point to a non-existent CloudFront distribution
 - DNS record: `chainy.luichu.dev` → `d3hdtwr5zmjki6.cloudfront.net` (does not exist)
 - The CloudFront distribution was never created or was deleted
 
 **Symptoms:**
+
 - Error 530 in browser
 - Cloudflare error page with "Origin DNS resolution failed"
 - DNS queries show Cloudflare IPs instead of CloudFront domain
@@ -242,6 +244,7 @@ This document records the problems encountered during the chainy short URL servi
 **Solution:**
 
 1. **Identify the Issue:**
+
    ```bash
    # Check if CloudFront distribution exists
    aws cloudfront get-distribution --id d3hdtwr5zmjki6
@@ -249,6 +252,7 @@ This document records the problems encountered during the chainy short URL servi
    ```
 
 2. **Create Missing CloudFront Distribution:**
+
    ```bash
    # Deploy web module to create CloudFront distribution
    cd chainy
@@ -256,6 +260,7 @@ This document records the problems encountered during the chainy short URL servi
    ```
 
 3. **Update Cloudflare DNS Configuration:**
+
    - **Old CNAME:** `chainy.luichu.dev` → `d3hdtwr5zmjki6.cloudfront.net` ❌
    - **New CNAME:** `chainy.luichu.dev` → `d3eryivvnolnm9.cloudfront.net` ✅
    - **Proxy Status:** ✅ Proxied (Orange Cloud)
@@ -268,6 +273,7 @@ This document records the problems encountered during the chainy short URL servi
    ```
 
 **Prevention:**
+
 - Always verify CloudFront distribution exists before configuring DNS
 - Use Terraform to manage both CloudFront and DNS resources together
 - Monitor CloudFront distribution status regularly
