@@ -247,19 +247,25 @@ async function exchangeCodeForToken(code: string, redirectUri?: string, codeVeri
  */
 async function verifyGoogleToken(googleToken: string): Promise<any> {
   try {
+    logger.debug("Verifying Google ID token", { tokenLength: googleToken.length });
+    
     // Validate the ID token against the Google public endpoint
     // Simplified for this project; production workloads should rely on the official Google verification library
     const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${googleToken}`);
     
     if (!response.ok) {
+      const errorText = await response.text();
+      logger.error("Google tokeninfo API error", { status: response.status, error: errorText });
       throw new Error("Invalid Google token");
     }
 
     const tokenInfo = await response.json();
+    logger.debug("Token info received", { aud: tokenInfo.aud, email: tokenInfo.email });
     
     // Confirm that the token audience (aud) matches our configured client id
     const expectedAudience = process.env.GOOGLE_CLIENT_ID;
     if (tokenInfo.aud !== expectedAudience) {
+      logger.error("Token audience mismatch", { expected: expectedAudience, actual: tokenInfo.aud });
       throw new Error("Token audience mismatch");
     }
 
@@ -271,7 +277,7 @@ async function verifyGoogleToken(googleToken: string): Promise<any> {
       email_verified: tokenInfo.email_verified === "true",
     };
   } catch (error) {
-    console.error("Google token verification failed:", error);
+    logger.error("Google token verification failed", { error: error instanceof Error ? error.message : 'Unknown error' });
     throw new Error("Invalid Google token");
   }
 }

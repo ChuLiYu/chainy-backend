@@ -3895,9 +3895,9 @@ var Logger = class {
       case "staging" /* STAGING */:
         return 2 /* INFO */;
       case "production" /* PRODUCTION */:
-        return 0 /* ERROR */;
+        return 1 /* WARN */;
       default:
-        return 0 /* ERROR */;
+        return 1 /* WARN */;
     }
   }
   shouldLog(level) {
@@ -4198,13 +4198,18 @@ async function exchangeCodeForToken(code, redirectUri, codeVerifier) {
 }
 async function verifyGoogleToken(googleToken) {
   try {
+    logger2.debug("Verifying Google ID token", { tokenLength: googleToken.length });
     const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${googleToken}`);
     if (!response.ok) {
+      const errorText = await response.text();
+      logger2.error("Google tokeninfo API error", { status: response.status, error: errorText });
       throw new Error("Invalid Google token");
     }
     const tokenInfo = await response.json();
+    logger2.debug("Token info received", { aud: tokenInfo.aud, email: tokenInfo.email });
     const expectedAudience = process.env.GOOGLE_CLIENT_ID;
     if (tokenInfo.aud !== expectedAudience) {
+      logger2.error("Token audience mismatch", { expected: expectedAudience, actual: tokenInfo.aud });
       throw new Error("Token audience mismatch");
     }
     return {
@@ -4215,7 +4220,7 @@ async function verifyGoogleToken(googleToken) {
       email_verified: tokenInfo.email_verified === "true"
     };
   } catch (error) {
-    console.error("Google token verification failed:", error);
+    logger2.error("Google token verification failed", { error: error instanceof Error ? error.message : "Unknown error" });
     throw new Error("Invalid Google token");
   }
 }
