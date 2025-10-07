@@ -105,6 +105,36 @@ function extractToken(authorizationHeader?: string): string | null {
 }
 
 /**
+ * Check if service is paused or in emergency stop mode
+ * Returns appropriate error response if service is disabled
+ */
+function checkServiceStatus(): APIGatewayAuthorizerResult | null {
+  const servicePaused = process.env.SERVICE_PAUSED === "true";
+  const emergencyStop = process.env.EMERGENCY_STOP === "true";
+  
+  if (emergencyStop || servicePaused) {
+    const reason = emergencyStop 
+      ? (process.env.EMERGENCY_REASON || "緊急停止")
+      : (process.env.PAUSE_REASON || "服務維護");
+    const timestamp = emergencyStop 
+      ? (process.env.EMERGENCY_TIMESTAMP || "未知時間")
+      : (process.env.PAUSE_TIMESTAMP || "未知時間");
+    
+    logger.warn("Service is disabled", {
+      operation: 'checkServiceStatus',
+      reason,
+      timestamp,
+      emergencyStop
+    });
+    
+    // For authorizer, we need to throw an error to return 401/403
+    throw new Error(`Service temporarily unavailable: ${reason}`);
+  }
+  
+  return null;
+}
+
+/**
  * Lambda Authorizer handler
  * Validates JWT tokens for API Gateway requests with comprehensive security checks
  */
@@ -113,6 +143,12 @@ export async function handler(
   context: Context
 ): Promise<APIGatewayAuthorizerResult> {
   context.callbackWaitsForEmptyEventLoop = false;
+
+  // Check service status first
+  const serviceStatusCheck = checkServiceStatus();
+  if (serviceStatusCheck) {
+    return serviceStatusCheck;
+  }
 
   const token = extractToken(event.headers?.authorization || event.headers?.Authorization);
 

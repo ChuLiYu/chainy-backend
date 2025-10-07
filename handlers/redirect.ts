@@ -125,6 +125,169 @@ function extractRequestMetadata(event: APIGatewayProxyEventV2) {
   };
 }
 
+/**
+ * Check if service is paused or in emergency stop mode
+ * Returns appropriate error response if service is disabled
+ */
+function checkServiceStatus(): APIGatewayProxyResultV2 | null {
+  const servicePaused = process.env.SERVICE_PAUSED === "true";
+  const emergencyStop = process.env.EMERGENCY_STOP === "true";
+  
+  if (emergencyStop) {
+    const reason = process.env.EMERGENCY_REASON || "緊急停止";
+    const timestamp = process.env.EMERGENCY_TIMESTAMP || "未知時間";
+    
+    logger.warn("Service is in emergency stop mode", {
+      operation: 'checkServiceStatus',
+      reason,
+      timestamp
+    });
+    
+    return {
+      statusCode: 503,
+      headers: {
+        "Content-Type": "text/html",
+        "Cache-Control": "no-store",
+      },
+      body: `<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>服務暫時停止 - Chainy</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 500px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    h1 {
+      color: #ff6b6b;
+      font-size: 48px;
+      margin: 0 0 10px 0;
+    }
+    p {
+      color: #666;
+      font-size: 18px;
+      margin: 20px 0;
+    }
+    .reason {
+      background: #ffe6e6;
+      padding: 20px;
+      border-radius: 8px;
+      font-size: 16px;
+      color: #d63031;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚨</h1>
+    <p>服務暫時停止</p>
+    <div class="reason">
+      <strong>原因：</strong>${reason}<br>
+      <strong>時間：</strong>${timestamp}
+    </div>
+    <p>我們正在處理緊急情況，請稍後再試</p>
+  </div>
+</body>
+</html>`,
+    };
+  }
+  
+  if (servicePaused) {
+    const reason = process.env.PAUSE_REASON || "服務維護";
+    const timestamp = process.env.PAUSE_TIMESTAMP || "未知時間";
+    
+    logger.info("Service is paused", {
+      operation: 'checkServiceStatus',
+      reason,
+      timestamp
+    });
+    
+    return {
+      statusCode: 503,
+      headers: {
+        "Content-Type": "text/html",
+        "Cache-Control": "no-store",
+      },
+      body: `<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>服務維護中 - Chainy</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #fdcb6e 0%, #e17055 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 500px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    h1 {
+      color: #fdcb6e;
+      font-size: 48px;
+      margin: 0 0 10px 0;
+    }
+    p {
+      color: #666;
+      font-size: 18px;
+      margin: 20px 0;
+    }
+    .reason {
+      background: #fff3cd;
+      padding: 20px;
+      border-radius: 8px;
+      font-size: 16px;
+      color: #856404;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>⏸️</h1>
+    <p>服務維護中</p>
+    <div class="reason">
+      <strong>原因：</strong>${reason}<br>
+      <strong>時間：</strong>${timestamp}
+    </div>
+    <p>我們正在進行系統維護，請稍後再試</p>
+  </div>
+</body>
+</html>`,
+    };
+  }
+  
+  return null;
+}
+
 // Redirect handler: look up the destination, bump counters, emit analytics, return 301.
 // Core redirect logic with click tracking and analytics event emission
 export async function handler(
@@ -132,6 +295,12 @@ export async function handler(
   context: Context,
 ): Promise<APIGatewayProxyResultV2> {
   context.callbackWaitsForEmptyEventLoop = false;
+
+  // Check service status first
+  const serviceStatusCheck = checkServiceStatus();
+  if (serviceStatusCheck) {
+    return serviceStatusCheck;
+  }
 
   const code = event.pathParameters?.code;
   

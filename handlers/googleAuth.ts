@@ -414,6 +414,53 @@ function handleCors(event: APIGatewayProxyEventV2): APIGatewayProxyResultV2 | nu
 }
 
 /**
+ * Check if service is paused or in emergency stop mode
+ * Returns appropriate error response if service is disabled
+ */
+function checkServiceStatus(): APIGatewayProxyResultV2 | null {
+  const servicePaused = process.env.SERVICE_PAUSED === "true";
+  const emergencyStop = process.env.EMERGENCY_STOP === "true";
+  
+  if (emergencyStop) {
+    const reason = process.env.EMERGENCY_REASON || "緊急停止";
+    const timestamp = process.env.EMERGENCY_TIMESTAMP || "未知時間";
+    
+    logger.warn("Service is in emergency stop mode", {
+      operation: 'checkServiceStatus',
+      reason,
+      timestamp
+    });
+    
+    return jsonResponse(503, {
+      message: "服務暫時停止服務",
+      reason: reason,
+      timestamp: timestamp,
+      status: "emergency_stop"
+    });
+  }
+  
+  if (servicePaused) {
+    const reason = process.env.PAUSE_REASON || "服務維護";
+    const timestamp = process.env.PAUSE_TIMESTAMP || "未知時間";
+    
+    logger.info("Service is paused", {
+      operation: 'checkServiceStatus',
+      reason,
+      timestamp
+    });
+    
+    return jsonResponse(503, {
+      message: "服務暫時停止服務",
+      reason: reason,
+      timestamp: timestamp,
+      status: "paused"
+    });
+  }
+  
+  return null;
+}
+
+/**
  * Main handler for Google authentication
  * Orchestrates the complete OAuth 2.0 flow with security validations and user management
  */
@@ -424,6 +471,12 @@ export async function handler(
   const corsResponse = handleCors(event);
   if (corsResponse) {
     return corsResponse;
+  }
+
+  // Check service status first
+  const serviceStatusCheck = checkServiceStatus();
+  if (serviceStatusCheck) {
+    return serviceStatusCheck;
   }
 
   try {
