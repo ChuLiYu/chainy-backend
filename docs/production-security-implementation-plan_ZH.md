@@ -443,7 +443,7 @@ resource "aws_apigatewayv2_api" "chainy" {
   cors_configuration {
     allow_origins = [
       "https://chainy.luichu.dev",
-      "http://localhost:5173",  # 本地開發
+      "http://localhost:3000",  # 本地開發
       # 根據需要添加其他允許的來源
     ]
     allow_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]

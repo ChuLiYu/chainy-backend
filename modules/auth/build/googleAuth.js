@@ -4121,7 +4121,46 @@ async function getJwtSecret() {
     throw new Error("Authentication configuration error");
   }
 }
-async function exchangeCodeForToken(code, redirectUri, codeVerifier) {
+var ALLOWED_REDIRECT_URIS = [
+  "https://chainy.luichu.dev",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000"
+];
+function validateRedirectUri(redirectUri) {
+  return ALLOWED_REDIRECT_URIS.includes(redirectUri);
+}
+function getSecureRedirectUri(event, frontendRedirectUri) {
+  if (frontendRedirectUri && validateRedirectUri(frontendRedirectUri)) {
+    logger2.info("Using validated frontend redirect URI", {
+      operation: "getSecureRedirectUri",
+      redirectUri: frontendRedirectUri
+    });
+    return frontendRedirectUri;
+  }
+  const origin = event.headers.origin || event.headers.Origin;
+  if (origin === "https://chainy.luichu.dev") {
+    logger2.info("Using production redirect URI based on origin", {
+      operation: "getSecureRedirectUri",
+      origin,
+      redirectUri: "https://chainy.luichu.dev"
+    });
+    return "https://chainy.luichu.dev";
+  } else if (origin === "http://localhost:3000" || origin === "http://127.0.0.1:3000") {
+    logger2.info("Using local development redirect URI based on origin", {
+      operation: "getSecureRedirectUri",
+      origin,
+      redirectUri: "http://localhost:3000"
+    });
+    return "http://localhost:3000";
+  }
+  const fallbackUri = process.env.GOOGLE_REDIRECT_URI || "https://chainy.luichu.dev";
+  logger2.info("Using fallback redirect URI", {
+    operation: "getSecureRedirectUri",
+    fallbackUri
+  });
+  return fallbackUri;
+}
+async function exchangeCodeForToken(code, redirectUri, codeVerifier, event) {
   try {
     const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
     let GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -4143,7 +4182,13 @@ async function exchangeCodeForToken(code, redirectUri, codeVerifier) {
     if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
       throw new Error("Google OAuth credentials not configured");
     }
-    const resolvedRedirectUri = redirectUri || process.env.GOOGLE_REDIRECT_URI || "http://localhost:3000/google-auth-callback.html";
+    const resolvedRedirectUri = event ? getSecureRedirectUri(event, redirectUri) : redirectUri && validateRedirectUri(redirectUri) ? redirectUri : process.env.GOOGLE_REDIRECT_URI || "https://chainy.luichu.dev";
+    logger2.info("Resolved redirect URI for token exchange", {
+      operation: "exchangeCodeForToken",
+      resolvedRedirectUri,
+      frontendRedirectUri: redirectUri,
+      hasEvent: !!event
+    });
     const tokenParams = new URLSearchParams({
       client_id: GOOGLE_CLIENT_ID,
       client_secret: GOOGLE_CLIENT_SECRET,
@@ -4225,7 +4270,7 @@ async function verifyGoogleToken(googleToken) {
   }
 }
 async function getOrCreateUser(googleUser) {
-  const tableName = process.env.USERS_TABLE_NAME || "chainy-users";
+  const tableName = process.env.USERS_TABLE_NAME || "chainy-prod-chainy-users";
   const userId = googleUser.sub;
   if (!googleUser.email) {
     throw new Error("Invalid Google user payload: email missing");
@@ -4316,10 +4361,49 @@ function handleCors(event) {
   }
   return null;
 }
+function checkServiceStatus() {
+  const servicePaused = process.env.SERVICE_PAUSED === "true";
+  const emergencyStop = process.env.EMERGENCY_STOP === "true";
+  if (emergencyStop) {
+    const reason = process.env.EMERGENCY_REASON || "\u7DCA\u6025\u505C\u6B62";
+    const timestamp = process.env.EMERGENCY_TIMESTAMP || "\u672A\u77E5\u6642\u9593";
+    logger2.warn("Service is in emergency stop mode", {
+      operation: "checkServiceStatus",
+      reason,
+      timestamp
+    });
+    return jsonResponse(503, {
+      message: "\u670D\u52D9\u66AB\u6642\u505C\u6B62\u670D\u52D9",
+      reason,
+      timestamp,
+      status: "emergency_stop"
+    });
+  }
+  if (servicePaused) {
+    const reason = process.env.PAUSE_REASON || "\u670D\u52D9\u7DAD\u8B77";
+    const timestamp = process.env.PAUSE_TIMESTAMP || "\u672A\u77E5\u6642\u9593";
+    logger2.info("Service is paused", {
+      operation: "checkServiceStatus",
+      reason,
+      timestamp
+    });
+    return jsonResponse(503, {
+      message: "\u670D\u52D9\u66AB\u6642\u505C\u6B62\u670D\u52D9",
+      reason,
+      timestamp,
+      status: "paused"
+    });
+  }
+  return null;
+}
 async function handler(event) {
   const corsResponse = handleCors(event);
   if (corsResponse) {
     return corsResponse;
+  }
+  const serviceStatusCheck = checkServiceStatus();
+  if (serviceStatusCheck) {
+    return serviceStatusCheck;
   }
   try {
     if (!event.body) {
@@ -4335,7 +4419,7 @@ async function handler(event) {
     }
     let googleUser;
     if (tokenType === "code") {
-      googleUser = await exchangeCodeForToken(googleToken, redirectUri, codeVerifier);
+      googleUser = await exchangeCodeForToken(googleToken, redirectUri, codeVerifier, event);
     } else {
       googleUser = await verifyGoogleToken(googleToken);
     }

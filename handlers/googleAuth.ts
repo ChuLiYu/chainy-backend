@@ -143,7 +143,57 @@ async function getJwtSecret(): Promise<string> {
  * Exchange OAuth code for user info
  * Implements OAuth 2.0 authorization code flow with PKCE support for enhanced security
  */
-async function exchangeCodeForToken(code: string, redirectUri?: string, codeVerifier?: string): Promise<any> {
+// 安全的重定向 URI 白名單
+const ALLOWED_REDIRECT_URIS = [
+  'https://chainy.luichu.dev',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000'
+];
+
+// 安全的重定向 URI 驗證函數
+function validateRedirectUri(redirectUri: string): boolean {
+  return ALLOWED_REDIRECT_URIS.includes(redirectUri);
+}
+
+// 根據請求來源自動選擇安全的重定向 URI
+function getSecureRedirectUri(event: APIGatewayProxyEventV2, frontendRedirectUri?: string): string {
+  // 1. 優先使用前端傳遞的 URI（如果通過驗證）
+  if (frontendRedirectUri && validateRedirectUri(frontendRedirectUri)) {
+    logger.info("Using validated frontend redirect URI", { 
+      operation: 'getSecureRedirectUri',
+      redirectUri: frontendRedirectUri 
+    });
+    return frontendRedirectUri;
+  }
+  
+  // 2. 根據請求來源自動選擇
+  const origin = event.headers.origin || event.headers.Origin;
+  if (origin === 'https://chainy.luichu.dev') {
+    logger.info("Using production redirect URI based on origin", { 
+      operation: 'getSecureRedirectUri',
+      origin,
+      redirectUri: 'https://chainy.luichu.dev'
+    });
+    return 'https://chainy.luichu.dev';
+  } else if (origin === 'http://localhost:3000' || origin === 'http://127.0.0.1:3000') {
+    logger.info("Using local development redirect URI based on origin", { 
+      operation: 'getSecureRedirectUri',
+      origin,
+      redirectUri: 'http://localhost:3000'
+    });
+    return 'http://localhost:3000';
+  }
+  
+  // 3. 使用環境變數作為後備
+  const fallbackUri = process.env.GOOGLE_REDIRECT_URI || 'https://chainy.luichu.dev';
+  logger.info("Using fallback redirect URI", { 
+    operation: 'getSecureRedirectUri',
+    fallbackUri
+  });
+  return fallbackUri;
+}
+
+async function exchangeCodeForToken(code: string, redirectUri?: string, codeVerifier?: string, event?: APIGatewayProxyEventV2): Promise<any> {
   try {
     const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
     let GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -172,9 +222,19 @@ async function exchangeCodeForToken(code: string, redirectUri?: string, codeVeri
       throw new Error("Google OAuth credentials not configured");
     }
 
-    const resolvedRedirectUri = redirectUri
-      || process.env.GOOGLE_REDIRECT_URI
-      || 'http://localhost:3000/google-auth-callback.html';
+    // 使用安全的重定向 URI 選擇邏輯
+    const resolvedRedirectUri = event 
+      ? getSecureRedirectUri(event, redirectUri)
+      : (redirectUri && validateRedirectUri(redirectUri) 
+          ? redirectUri 
+          : process.env.GOOGLE_REDIRECT_URI || 'https://chainy.luichu.dev');
+
+    logger.info("Resolved redirect URI for token exchange", {
+      operation: 'exchangeCodeForToken',
+      resolvedRedirectUri,
+      frontendRedirectUri: redirectUri,
+      hasEvent: !!event
+    });
 
     // Exchange code for access token
     const tokenParams = new URLSearchParams({
@@ -499,7 +559,7 @@ export async function handler(
     // Verify Google token or exchange OAuth code
     let googleUser;
     if (tokenType === 'code') {
-      googleUser = await exchangeCodeForToken(googleToken, redirectUri, codeVerifier);
+      googleUser = await exchangeCodeForToken(googleToken, redirectUri, codeVerifier, event);
     } else {
       googleUser = await verifyGoogleToken(googleToken);
     }

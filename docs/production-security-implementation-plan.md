@@ -548,7 +548,7 @@ resource "aws_apigatewayv2_api" "chainy" {
   cors_configuration {
     allow_origins = [
       "https://chainy.luichu.dev",
-      "http://localhost:5173",  # For local development
+      "http://localhost:3000",  # For local development
       # Add other allowed origins as needed
     ]
     allow_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
