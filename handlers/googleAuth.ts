@@ -289,7 +289,7 @@ async function verifyGoogleToken(googleToken: string): Promise<any> {
  * @returns User record
  */
 async function getOrCreateUser(googleUser: GoogleUser): Promise<UserRecord> {
-  const tableName = process.env.USERS_TABLE_NAME || "chainy-users";
+  const tableName = process.env.USERS_TABLE_NAME || "chainy-prod-chainy-users";
   const userId = googleUser.sub;
 
   if (!googleUser.email) {
