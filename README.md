@@ -9,7 +9,7 @@
 
 **Enterprise-grade serverless architecture demonstrating production AWS cloud patterns, Infrastructure as Code, and cost-optimized ML deployment strategies**
 
-[🌐 Live Demo](https://chainy.luichu.dev) • [📚 Documentation](#-documentation) • [🏗️ Architecture](#-architecture) • [🚀 Quick Start](#-quick-start)
+• [📚 Documentation](#-documentation) • [🏗️ Architecture](#-architecture) • [🚀 Quick Start](#-quick-start)
 
 </div>
 
